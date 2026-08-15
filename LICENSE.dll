@@ -1,37 +1,42 @@
-## 特别声明：`fun.dll` 嵌入式运行时授权
+# `fun.dll` Embedding Runtime License
 
-`fun.dll` 是 Fun 语言的嵌入式运行时库，允许第三方应用程序将 Fun 脚本作为扩展语言集成到自身进程中。
+**English** (this file) 路 [绠�浣撲腑鏂嘳(LICENSE.dll.zh.md)
 
-### 1. 免费用（MIT 协议，无需付费）
+## Special Notice
 
-你可以在以下场景中免费使用 `fun.dll`：
+`fun.dll` is the embedded runtime library of the Fun language. It allows third-party applications to integrate Fun scripts into their own processes as an extension language.
 
-- 个人学习、研究、原型开发
-- 内部工具、自动化脚本（未对外分发）
-- 以 **开源许可证（GPL/BSD/MIT 等）** 发布的产品，且将 `fun.dll` 的源码或二进制一并开源
-- 非商业性质的教育、学术项目
+### 1. Free use (MIT license, no payment required)
 
-### 2. 商业授权（需付费购买）
+You may use `fun.dll` free of charge in the following scenarios:
 
-如果你将 `fun.dll` 嵌入到你自己的商业产品中，并且：
+- Personal learning, research, and prototype development
+- Internal tools and automation scripts (not distributed externally)
+- Products released under an **open-source license (GPL/BSD/MIT, etc.)**, provided that the source code or binary of `fun.dll` is also open-sourced
+- Non-commercial educational or academic projects
 
-- 该产品以 **闭源** 形式分发（如提供 exe、dmg、apk 等）
-- 或者该产品以 **SaaS 服务** 形式交付，且后端使用了 `fun.dll` 作为核心逻辑组件
-- 或者你修改了 `fun.dll` 的源码并闭源发布
+### 2. Commercial license (purchase required)
 
-则必须购买商业授权。请联系：
+If you embed `fun.dll` into your own commercial product, and:
+
+- The product is distributed **closed-source** (such as exe, dmg, apk, etc.); or
+- The product is delivered as a **SaaS service** whose backend uses `fun.dll` as a core logic component; or
+- You modify the source code of `fun.dll` and release it closed-source;
+
+then you must purchase a commercial license. Please contact:
 
  zwd@funlang.org
 
-### 3. 价格与条款
+### 3. Pricing and terms
 
-商业授权为 **一次性授权**，按项目或按公司为单位，并提供：
-- 永久使用权（当前版本）
-- 优先技术支持
-- 定制化修改服务（可选）
+The commercial license is a **one-time license**, priced per project or per company, and provides:
 
-具体费用请邮件咨询。
+- Perpetual usage rights (current version)
+- Prioritized technical support
+- Customized modification services (optional)
+
+Please inquire about the specific fees by email.
 
 ---
 
-> **简单理解**：你把 `fun.dll` 当作“粘合剂”集成进自己的软件里，并且这个软件要卖给客户——那么请付费。其他情况都免费。
+> **In simple terms**: If you integrate `fun.dll` into your software as a "glue" component and sell that software to customers, then please pay. All other cases are free.

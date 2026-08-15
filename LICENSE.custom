@@ -1,43 +1,47 @@
-## 特别声明：Fun 内核定制开发授权
+# Fun Core Custom-Development Commercial License
 
-Fun 语言内核（包括但不限于 `fun.exe`、`fun.dll` 及其完整源代码）允许你自由使用、修改、学习。但如果你：
+**English** (this file) 路 [绠�浣撲腑鏂嘳(LICENSE.custom.zh.md)
 
-- 对 Fun 内核做了 **实质性修改**，并将修改后的版本以 **闭源形式** 作为自己商业产品的一部分对外分发；或
-- 基于 Fun 内核 **构建了一个衍生产品**（如定制版解释器、专用运行时），并将该产品以商业许可证形式销售；或
-- 将 Fun 内核的 **定制版本** 嵌入到你的硬件设备、SaaS 服务或商业软件中并闭源分发；
+## Special Notice
 
-则必须购买 **定制开发商业授权**。
+The Fun language core (including but not limited to `fun.exe`, `fun.dll`, and their complete source code) may be freely used, modified, and studied. However, if you:
 
-### 免费使用场景（无需授权）
+- Make **substantial modifications** to the Fun core and redistribute the modified version **closed-source** as part of your own commercial product; or
+- Build a **derivative work** based on the Fun core (such as a customized interpreter or a dedicated runtime) and sell it under a commercial license; or
+- Embed a **customized version** of the Fun core into your hardware device, SaaS service, or commercial software and distribute it closed-source;
 
-以下情况不需要购买商业授权：
+then you must purchase a **Custom-Development Commercial License**.
 
-- 你对 Fun 内核进行修改，但修改后的版本依然以 **开源许可证（如 MIT、GPL）** 公开发布。
-- 你对 Fun 内核进行修改，但仅用于 **内部工具、测试、学习**，未对外分发。
-- 你直接使用官方的 `fun.exe` / `fun.dll`（未修改），按照 MIT 协议使用或分发。
+### Free usage scenarios (no license required)
 
-### 商业授权内容
+The following cases do not require purchasing a commercial license:
 
-购买定制开发商业授权后，你获得：
+- You modify the Fun core, but publish the modified version publicly under an **open-source license (such as MIT, GPL)**.
+- You modify the Fun core, but use it only for **internal tools, testing, or learning**, without distributing it externally.
+- You directly use the official `fun.exe` / `fun.dll` (unmodified) and use or redistribute it under the MIT license.
 
--  对 Fun 内核进行定制修改并闭源分发的 **完整权限**
--  你所定制版本的 **永久使用权**（不依赖后续版本）
--  官方的 **技术支持和优先响应**
--  可选：将你的定制修改 **合并回主线**（由我方评估）
--  不包括：公开发行版 `fun.exe` / `fun.dll` 的独占权（其他客户仍可购买同样授权）
+### What the commercial license grants
 
-### 价格与获取方式
+After purchasing the Custom-Development Commercial License, you receive:
 
-定制开发商业授权为 **一次性授权**，按项目或按公司为单位计费。具体价格根据以下因素确定：
+- **Full permission** to customize, modify, and distribute the Fun core closed-source
+- **Perpetual usage rights** to your customized version (not dependent on later versions)
+- Official **technical support and prioritized response**
+- Optional: **merging your custom modifications back into the mainline** (subject to our evaluation)
+- Not included: exclusive rights to the public release of `fun.exe` / `fun.dll` (other customers may still purchase the same license)
 
-- 修改范围和深度
-- 是否涉及内核核心组件（解析器、GC、FFI 层）
-- 是否需要额外的技术支持或培训
+### Pricing and how to obtain it
 
-请联系获取报价：
+The Custom-Development Commercial License is a **one-time license**, priced per project or per company. The specific price is determined by the following factors:
+
+- The scope and depth of the modifications
+- Whether kernel-core components are involved (parser, GC, FFI layer)
+- Whether additional technical support or training is needed
+
+Please contact us for a quote:
 
  zwd@funlang.org
 
 ---
 
-> **简单理解**：你可以在公司内部随便改 Fun 的内核，随便用。但只要你想把改过的版本当成自己的产品卖给别人——那这本质上是在“商业分发我的核心代码”，请付费。
+> **In simple terms**: You may modify the Fun core freely within your company and use it as you wish. But if you want to sell the modified version as your own product to others, that is essentially "commercially distributing my core code", so please pay.
