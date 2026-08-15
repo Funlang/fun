@@ -1,0 +1,31 @@
+# Preserve line endings & encoding for this Windows-centric (Delphi/FPC) codebase.
+# Existing blobs are kept as-is; this governs future commits and checkouts.
+
+# Pascal / C sources
+*.pas   text eol=crlf
+*.inc   text eol=crlf
+*.dpr   text eol=crlf
+*.c     text eol=crlf
+*.h     text eol=crlf
+
+# Fun scripts & data formats
+*.fun   text eol=crlf
+*.ebnf  text eol=crlf
+*.y     text eol=crlf
+*.l     text eol=crlf
+*.ini   text eol=crlf
+*.md    text eol=lf
+
+# Batch / Makefiles
+*.bat   text eol=crlf
+*.mak   text eol=crlf
+
+# Explicitly binary (never touch)
+*.exe   binary
+*.dll   binary
+*.obj   binary
+*.res   binary
+*.cod   binary
+*.png   binary
+*.ico   binary
+*.gz    binary
