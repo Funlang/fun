@@ -57,3 +57,6 @@ src/parse/bnf/yacc.lst
 .DS_Store
 Thumbs.db
 desktop.ini
+
+# ---- Local article drafts (own git repo, backed up to /data/git/funlang/fun-art) ----
+art/
