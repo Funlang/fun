@@ -3,6 +3,8 @@
 > **Fun** —— 一门以中文为关键字、内置 JSON/FD 数据格式与 PCRE 正则的嵌入式脚本语言。
 > 语言核心使用 Pascal（Delphi / Free Pascal）编写，自带解释器 VM 与标准库，可编译为命令行程序或嵌入第三方应用。
 
+**English**: [README.en.md](README.en.md) | **中文**: README.md
+
 - 语言版本：**9.0**
 - 官方站点：<https://funlang.org>
 - 作者：Zhang Weidong &lt;zwd@funlang.org&gt;
