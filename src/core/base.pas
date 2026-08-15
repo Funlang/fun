@@ -1,0 +1,1070 @@
+// Copyright (c) 2010-2026 Zhang Weidong <zwd@funlang.org>
+//
+// Permission is hereby granted, free of charge, to any person obtaining a copy
+// of this software and associated documentation files (the "Software"), to deal
+// in the Software without restriction, including without limitation the rights
+// to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+// copies of the Software, and to permit persons to whom the Software is
+// furnished to do so, subject to the following conditions:
+//
+// The above copyright notice and this permission notice shall be included in all
+// copies or substantial portions of the Software.
+//
+// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+// OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+// SOFTWARE.
+unit base;
+
+interface
+
+uses SysUtils, StrUtils,
+     fun;
+
+type
+  CValue  = System.Variant;
+  PValue  = ^CValue;
+  PPValue = ^PValue;
+  CData   = System.TVarData;
+  PData   = ^CData;
+
+var
+  NullValue: CValue;
+
+type
+  EBase  = SysUtils.Exception;
+
+type
+  PArrayOfPtr = ^ArrayOfPtr;
+   ArrayOfPtr = array[0..Maxint div 16 - 1] of fun.ptr;
+
+const
+  Max_Char = 39;
+
+type
+  PTrieNode = ^CTrieNode;
+  CTrieNode = packed record
+    Index: array[0..Max_Char+1] of fun.byte;
+    Items: array of PTrieNode;
+  end;
+  
+  CTrieEach = procedure (p: fun.ptr) of object;
+  CTrieEachEx = procedure (p: fun.ptr; const s: fun.str) of object;
+type
+
+  CBase = class(TObject, IInterface)
+  protected
+    FRefCount: fun.int;
+    function QueryInterface({$IFDEF FPC_HAS_CONSTREF}constref{$ELSE}const{$ENDIF} IID: TGUID; out Obj): HResult; {$IfDef FPC}{$IFNDEF WINDOWS}cdecl{$ELSE}stdcall{$ENDIF}{$ELSE}stdcall{$ENDIF};
+  public
+    class function NewInstance: TObject; override;
+    function _AddRef: fun.int; {$IfDef FPC}{$IFNDEF WINDOWS}cdecl{$ELSE}stdcall{$ENDIF}{$ELSE}stdcall{$ENDIF};
+    function _Release: fun.int; {$IfDef FPC}{$IFNDEF WINDOWS}cdecl{$ELSE}stdcall{$ENDIF}{$ELSE}stdcall{$ENDIF};
+  end;
+  
+  CList = class(CBase)
+  private
+    function GetItem(i: fun.int): fun.ptr;
+    procedure SetSize(Value: fun.int);
+  protected
+    FAutoDel: fun.bool;
+    FCount: fun.int;
+    FSize: fun.int;
+    procedure Clear; virtual;
+    procedure Grow; virtual;
+    property Size: fun.int read FSize write SetSize;
+  public
+    List: PArrayOfPtr;
+    constructor Create(autoDel: fun.bool = true);
+    destructor Destroy; override;
+    function Add(p: fun.ptr; i: fun.int = -1): fun.int;
+    function Contains(p: fun.ptr): fun.bool;
+    property Count: fun.int read FCount write FCount;
+    property Item[i: fun.int]: fun.ptr read GetItem; default;
+  end;
+  
+  CHash = class(CBase)
+  private
+    Root: PTrieNode;
+    function NewNode: PTrieNode;
+  protected
+    procedure Clear; virtual;
+    procedure FreeItem(p: fun.ptr); virtual;
+    function GetItemById(const id: fun.str): fun.ptr; virtual;
+    procedure SetItemById(const id: fun.str; Value: fun.ptr); virtual;
+  public
+    destructor Destroy; override;
+    procedure Each(DoEach: CTrieEach);
+    procedure EachEx(DoEach: CTrieEachEx; forName: fun.bool = false);
+    function FindOrAdd(const id: fun.str; p: fun.ptr = nil; isOverwrite: fun.bool = false; isHexId: fun.bool = false): fun.ptr;
+    property ItemById[const id: fun.str]: fun.ptr read GetItemById write SetItemById; default;
+  end;
+  
+  CHist = class(CHash)
+  private
+    function GetItem(i: fun.int): fun.ptr;
+    procedure SetItem(i: fun.int; Value: fun.ptr);
+  protected
+    procedure Clear; override;
+    procedure FreeItem(p: fun.ptr); override;
+    function GetItemById(const id: fun.str): fun.ptr; override;
+    procedure SetItemById(const id: fun.str; Value: fun.ptr); override;
+  public
+    List: CList;
+    constructor Create(autoDel: fun.bool = true);
+    destructor Destroy; override;
+    function Add(p: fun.ptr): fun.int; virtual;
+    function Count: fun.int;
+    property Item[i: fun.int]: fun.ptr read GetItem write SetItem;
+  end;
+  
+
+type
+  CVarStack = class;
+
+  CFunStack = class(CBase)
+  protected
+    level: fun.int;
+    vars: CList;
+    procedure PopVars;
+    procedure PushVar(avar: CVarStack);
+  public
+    start: fun.int;
+    constructor Create;
+    destructor Destroy; override;
+    procedure Pop;
+    procedure Push;
+  end;
+  
+  CVarStack = class(CBase)
+  private
+    values: array of CValue;
+  protected
+    level: fun.int;
+    owner: CFunStack;
+    pp_val: PPValue;
+    p_val: PValue;
+    procedure Pop;
+    procedure PushVar;
+  public
+    constructor Create(aowner: CFunStack; p: PValue; pp: PPValue);
+    procedure Parse(p: PValue; pp: PPValue);
+    procedure Push;
+  end;
+  
+
+type
+  ECompResult = (EQ, LT, GT, NE);
+
+function funBool(val: PValue): fun.bool;
+function isNull(val: PValue): fun.bool;
+function isStr(vt: TVarType): fun.bool; overload;
+function isStr(val: PValue): fun.bool; overload;
+function isNum(vt: TVarType; all: fun.bool = false): fun.bool; overload;
+function isNum(val: PValue; all: fun.bool = false): fun.bool; overload;
+function isFloat(vt: TVarType): fun.bool; overload;
+function isFloat(val: PValue): fun.bool; overload;
+function isOle(val: PValue): fun.bool;
+function varComp(v1, v2: PValue; isCase: fun.bool): ECompResult;
+
+function asObj(val: PValue): CBase;
+procedure setObj(val: PValue; obj: CBase; vt: fun.word = VarObject);
+procedure clear(val: PValue);
+
+procedure add(obj: CBase);
+procedure del(obj: CBase);
+
+function calcIndex(i, N: fun.int): fun.int;
+Function NewStringReplace(const S, OldPattern, NewPattern: string;  Flags: TReplaceFlags): string;
+
+implementation
+
+{$IfDef Unicode}{$WARN WIDECHAR_REDUCED OFF}{$EndIf}
+
+uses Variants;
+
+procedure add(obj: CBase);
+begin
+  if obj <> nil then obj._AddRef;
+end;
+
+procedure del(obj: CBase);
+begin
+  if obj <> nil then obj._Release;
+end;
+
+//==============================================================
+function asObj(val: PValue): CBase;
+begin
+  with PData(val)^ do
+  begin
+    if (VType = VarObject) or (VType = VarObjNew) then
+      result := VPointer
+    else
+      result := nil
+    ;
+  end;
+end;
+
+procedure setObj(val: PValue; obj: CBase; vt: fun.word);
+begin
+  if vt = VarObjNew then add(obj);
+  clear(val);
+  with PData(val)^ do
+  begin
+    VType    := vt;
+    VInt64   := 0;
+    VPointer := obj;
+  end;
+end;
+
+procedure clear(val: PValue);
+begin
+  //asm
+  //  call Variants.@VarClr
+  //end;
+  with PData(val)^ do
+  begin
+    if VType = VarObjNew then
+    begin
+      del(VPointer);
+      VType  := VarEmpty;
+      VInt64 := 0;
+    end;
+  end;
+end;
+
+//==============================================================
+function lockInc(var I: fun.int): fun.int;
+{$IfNDef ARM}
+asm
+      MOV   EDX,1
+      XCHG  EAX,EDX
+ LOCK XADD  [EDX],EAX
+      INC   EAX
+{$Else}
+begin
+  Inc(I);
+  result := I;
+{$EndIf}
+end;
+
+function lockDec(var I: fun.int): fun.int;
+{$IfNDef ARM}
+asm
+      MOV   EDX,-1
+      XCHG  EAX,EDX
+ LOCK XADD  [EDX],EAX
+      DEC   EAX
+{$Else}
+begin
+  Dec(I);
+  result := I;
+{$EndIf}
+end;
+
+//==============================================================
+class function CBase.NewInstance: TObject;
+begin
+  Result := inherited NewInstance;
+  CBase(Result).FRefCount := 1;
+end;
+
+function CBase.QueryInterface({$IFDEF FPC_HAS_CONSTREF}constref{$ELSE}const{$ENDIF} IID: TGUID; out Obj): HResult;
+begin
+  if GetInterface(IID, Obj) then
+    Result := 0
+  else
+    Result := E_NOINTERFACE
+  ;
+end;
+
+function CBase._AddRef: fun.int;
+begin
+  Result := lockInc(FRefCount);
+end;
+
+function CBase._Release: fun.int;
+begin
+  Result := lockDec(FRefCount);
+  if Result <= 0 then Destroy;
+end;
+
+//==============================================================
+constructor CList.Create(autoDel: fun.bool = true);
+begin
+  FAutoDel := autoDel;
+  inherited Create;
+end;
+
+destructor CList.Destroy;
+begin
+  Clear;
+  Size := 0;
+  inherited Destroy;
+end;
+
+function CList.Add(p: fun.ptr; i: fun.int = -1): fun.int;
+begin
+  if i < 0 then
+    Result := FCount
+  else
+    Result := i
+  ;
+  while Result >= Size do Grow;
+  List^[Result] := p;
+  if FCount <= Result then FCount := Result + 1;
+end;
+
+procedure CList.Clear;
+var
+  i: fun.int;
+begin
+  for i := count-1 downto 0 do
+  begin
+    if FAutoDel then del(Item[i]);
+  end;
+  FCount := 0;
+end;
+
+function CList.Contains(p: fun.ptr): fun.bool;
+var
+  i: fun.int;
+begin
+  result := false;
+  for i := 0 to count-1 do
+  begin
+    if Item[i] = p then
+    begin
+      result := true;
+      exit;
+    end;
+  end;
+end;
+
+function CList.GetItem(i: fun.int): fun.ptr;
+begin
+  Result := List^[i];
+end;
+
+procedure CList.Grow;
+begin
+  if Size = 0 then
+    Size := 16
+  else
+    Size := Size * 2
+  ;
+end;
+
+procedure CList.SetSize(Value: fun.int);
+var
+  P: fun.ptr;
+begin
+  ReallocMem(List, Value * SizeOf(fun.ptr));
+  P := fun.ptr(fun.int(List) + FSize*SizeOf(fun.ptr));
+  FillChar(P^, (Value-FSize)*SizeOf(fun.ptr), 0);
+  FSize := Value;
+end;
+
+//==============================================================
+destructor CHash.Destroy;
+begin
+  Clear;
+  inherited Destroy;
+end;
+
+procedure CHash.Clear;
+  
+  procedure Clear(n: PTrieNode);
+  var
+    p: fun.ptr;
+    i: fun.int;
+  begin
+    if n <> nil then
+    begin
+      i := n.Index[Max_Char] - 1;
+      if i >= 0 then
+      begin
+        p := n.Items[i];
+        n.Items[i] := nil;
+        FreeItem(p);
+      end;
+  
+      for i := 0 to Length(n.Items)-1 do
+      begin
+        Clear(n.Items[i]);
+      end;
+      SetLength(n.Items, 0);
+  
+      Dispose(n);
+    end;
+  end;
+  
+begin
+  Clear(Root);
+  Root := nil;
+end;
+
+procedure CHash.Each(DoEach: CTrieEach);
+  
+  procedure Each(n: PTrieNode);
+  var
+    i, j: fun.int;
+  begin
+    if n <> nil then
+    begin
+      i := n.Index[Max_Char] - 1;
+      if i >= 0 then
+      begin
+        DoEach(n.Items[i]);
+      end;
+  
+      for j := 0 to Length(n.Items)-1 do
+      begin
+        if j <> i then Each(n.Items[j]);
+      end;
+    end;
+  end;
+  
+begin
+  Each(Root);
+end;
+
+procedure CHash.EachEx(DoEach: CTrieEachEx; forName: fun.bool = false);
+  
+  procedure Each(n: PTrieNode; const s: fun.str);
+  var
+    i, j: fun.int;
+  
+    function Index: fun.int;
+    var
+      i: fun.int;
+    begin
+      result := -1;
+      for i := 0 to Length(n.Index) -1 do
+      begin
+        if n.Index[i] = j + 1 then
+        begin
+          if forName then
+          case i of
+             0.. 9: result := i + Ord('0'); // 0-9
+            10..36: result := i - 10 + Ord('@'); // 10-36
+                37: result := Ord('_');
+                38: result := Ord('$');
+          end
+          else
+            result := i;
+          ;
+          exit;
+        end;
+      end;
+    end;
+  
+  begin
+    if n <> nil then
+    begin
+      i := n.Index[Max_Char] - 1;
+      if i >= 0 then
+      begin
+        DoEach(n.Items[i], s);
+      end;
+  
+      for j := 0 to Length(n.Items)-1 do
+      begin
+        if j <> i then Each(n.Items[j], s + fun.char(Index));
+      end;
+    end;
+  end;
+  
+begin
+  Each(Root, '');
+end;
+
+function CHash.FindOrAdd(const id: fun.str; p: fun.ptr = nil; isOverwrite: fun.bool = false; isHexId: fun.bool = false): fun.ptr;
+var
+  i: fun.int;
+  n: PTrieNode;
+  c: fun.char;
+  b, b2: fun.word;
+  
+  label Find_b;
+  
+  function AddNode(indx: fun.int; node: fun.ptr): fun.ptr;
+  var
+    leng: fun.int;
+  begin
+    leng := Length(n.Items);
+    SetLength(n.Items, leng + 1);
+    n.Index[indx] :=   leng + 1;
+    n.Items[leng] :=   node;
+    result        :=   node;
+  end;
+  
+begin
+  result := nil;
+  if Root = nil then
+  begin
+    if p = nil then         // Not found
+      exit
+    else                    // Add
+      Root := NewNode
+    ;
+  end;
+  
+  n := Root;
+  for i := 1 to Length(id) do
+  begin
+    c  := id[i];
+    b2 := 0;
+    if isHexId then
+      b := Ord(c)
+    else
+    begin
+      case c of
+        '0'..'9': b := Ord(c) - Ord('0'); // 0-9
+        '@'..'Z': b := Ord(c) - Ord('@') + Ord('9') - Ord('0') + 1; // 10-36
+        'a'..'z': b := Ord(c) - Ord('a') + Ord('9') - Ord('0') + 2; // 11-36
+        '_'     : b := 37;
+        '$'     : b := 38;
+        else
+        begin
+          b  := Max_Char + 1; // [^0-9@-Za-z_$]
+          b2 := Ord(c);
+        end;
+      end;
+    end;
+  
+    Find_b:
+  
+    if n.Index[b] > 0 then  // Found
+      n := n.Items[ n.Index[b] - 1 ]
+    else if p = nil then    // Not found
+      exit
+    else                    // Add
+      n := AddNode(b, NewNode)
+    ;
+  
+    if b2 > 0 then          // More than Max_Char
+    begin
+      b  := b2 mod Max_Char;
+      b2 := b2 div Max_Char;
+      goto Find_b;
+    end;
+  end{for};
+  
+  i := n.Index[Max_Char];
+  if i > 0 then             // Found
+  begin
+    result := n.Items[i - 1];
+    if isOverwrite then     // Delete or Replace
+    begin
+      n.Items[i - 1] := p;
+      result         := p;
+    end;
+  end
+  else if p <> nil then     // Add
+  begin
+    result := AddNode(Max_Char, p);
+  end;
+end;
+
+procedure CHash.FreeItem(p: fun.ptr);
+begin
+  del(p);
+end;
+
+function CHash.GetItemById(const id: fun.str): fun.ptr;
+begin
+  result := FindOrAdd(id);
+end;
+
+function CHash.NewNode: PTrieNode;
+begin
+  result := New(PTrieNode);
+  FillChar(result^, SizeOf(CTrieNode), 0);
+end;
+
+procedure CHash.SetItemById(const id: fun.str; Value: fun.ptr);
+begin
+  FindOrAdd(id, Value);
+end;
+
+//==============================================================
+constructor CHist.Create(autoDel: fun.bool = true);
+begin
+  inherited Create;
+  List := CList.Create(autoDel);
+end;
+
+destructor CHist.Destroy;
+begin
+  del(List);
+  inherited Destroy;
+end;
+
+function CHist.Add(p: fun.ptr): fun.int;
+begin
+  result := List.Add(p);
+end;
+
+procedure CHist.Clear;
+begin
+  // todo
+  //List.Clear;
+  inherited Clear;
+end;
+
+function CHist.Count: fun.int;
+begin
+  Result := List.Count;
+end;
+
+procedure CHist.FreeItem(p: fun.ptr);
+begin
+  // no action
+end;
+
+function CHist.GetItem(i: fun.int): fun.ptr;
+begin
+  result := List[i];
+end;
+
+function CHist.GetItemById(const id: fun.str): fun.ptr;
+begin
+  Result := inherited GetItemById(id);
+  if result <> nil then
+  begin
+    result := List[fun.uint(result)-1];
+  end;
+end;
+
+procedure CHist.SetItem(i: fun.int; Value: fun.ptr);
+begin
+  List.Add(Value, i);
+end;
+
+procedure CHist.SetItemById(const id: fun.str; Value: fun.ptr);
+var
+  p: fun.ptr;
+begin
+  p := FindOrAdd(id, fun.ptr(List.Count+1));
+  if fun.uint(p) = fun.uint(List.Count+1) then
+    List.Add(Value)
+  else
+    List.List^[fun.uint(p)] := Value
+  ;
+end;
+
+//==============================================================
+constructor CFunStack.Create;
+begin
+  inherited Create;
+  vars  := CList.Create(false);
+  start := 1;
+end;
+
+destructor CFunStack.Destroy;
+begin
+  del(vars);
+  inherited Destroy;
+end;
+
+procedure CFunStack.Pop;
+begin
+  Dec(level);
+  if level >= start then PopVars;
+end;
+
+procedure CFunStack.PopVars;
+var
+  i: fun.int;
+  vs: CVarStack;
+begin
+  for i := 0 to vars.count -1 do
+  begin
+    vs := CVarStack(vars[i]);
+    if vs.level = level - start + 1 then vs.Pop;
+  end;
+end;
+
+procedure CFunStack.Push;
+begin
+  Inc(level);
+end;
+
+procedure CFunStack.PushVar(avar: CVarStack);
+begin
+  if (level > start) and (avar.level < level-start) then
+  begin
+    avar.PushVar;
+    if not vars.Contains(avar) then vars.Add(avar);
+  end;
+end;
+
+//==============================================================
+constructor CVarStack.Create(aowner: CFunStack; p: PValue; pp: PPValue);
+begin
+  inherited Create;
+  owner  := aowner;
+  Parse(p, pp);
+end;
+
+procedure CVarStack.Parse(p: PValue; pp: PPValue);
+begin
+  p_val  := p;
+  pp_val := pp;
+end;
+
+procedure CVarStack.Pop;
+begin
+  Dec(level);
+  if level = 0 then
+    pp_val^ := p_val
+  else
+    pp_val^ := @values[level-1]
+  ;
+end;
+
+procedure CVarStack.Push;
+begin
+  owner.PushVar(self);
+end;
+
+procedure CVarStack.PushVar;
+begin
+  Inc(level);
+  if Length(values) < level then SetLength(values, level);
+  pp_val^ := @values[level-1];
+end;
+
+
+//==============================================================
+function funBool(val: PValue): fun.bool;
+begin
+  if isStr(val) then
+    try
+      result := fun.bool(val^);
+    except
+      result := not isNull(val);
+    end
+  else result := fun.bool(val^);
+end;
+
+function isNull(val: PValue): fun.bool;
+begin
+  with PData(val)^ do
+  begin
+    if VType <= varNull then
+      result := true
+    else if VType = varOleStr then
+      result := Length(VOleStr) = 0
+    else if VType in [varDouble, varCurrency, varDate, varInt64] then
+      result := VInt64 = 0
+    else
+      result := VInteger = 0
+    ;
+  end;
+end;
+
+function isStr(vt: TVarType): fun.bool; overload;
+begin
+  result := (vt = varOleStr)
+         or (vt = varString)
+     {$IfDef Unicode}
+     {$IfNDef WinCE}
+         or (vt = varUString)
+     {$EndIf}
+     {$EndIf}
+         ;
+end;
+
+function isStr(val: PValue): fun.bool;
+begin
+  result := isStr(PData(val).VType);
+end;
+
+function isNum(vt: TVarType; all: fun.bool = false): fun.bool;
+begin
+  result := (vt in
+         [  varSmallInt
+          , varInteger
+          , varBoolean
+          , varShortInt
+          , varByte
+          , varWord
+          , varLongWord
+          , varInt64
+     {$IfDef Unicode}
+     {$IfNDef WinCE}
+          , varUInt64
+     {$EndIf}
+     {$EndIf}
+         ]) or all and isFloat(vt);
+end;
+
+function isNum(val: PValue; all: fun.bool = false): fun.bool;
+var
+  i: fun.int;
+begin
+  with PData(val)^ do
+  begin
+    result := isNum(VType, all);
+
+    if not result then
+    begin
+      if isStr(VType) and (Length(fun.str(VString)) > 0) then
+      begin
+        //result := TryStrToInt(val^, i); //BUG: ตุ => true
+        for i := 1 to Length(fun.str(VString)) do
+        begin
+          if not (fun.str(VString)[i] in ['0'..'9']) then exit;
+        end;
+        result := true;
+      end;
+    end;
+  end;
+end;
+
+function isFloat(vt: TVarType): fun.bool;
+begin
+  result := vt in
+         [  varSingle
+          , varDouble
+         ];
+end;
+
+function isFloat(val: PValue): fun.bool;
+begin
+  result := isFloat(PData(val)^.VType);
+end;
+
+function isOle(val: PValue): fun.bool;
+begin
+  result := PData(val).VType = VarDispatch;
+end;
+
+function varComp(v1, v2: PValue; isCase: fun.bool): ECompResult;
+var
+  i: fun.int;
+  a, b: PData;
+  anil, bnil: fun.bool;
+const
+  ECbool: array [fun.bool] of ECompResult = (NE, EQ);
+label
+  _Else;
+begin
+  a := PData(v1);
+  b := PData(v2);
+
+  // Null
+  anil := isNull(v1);
+  bnil := isNull(v2);
+  if anil and bnil then
+    result := EQ
+  else if anil and isOle(v2) then
+    result := NE
+  else if bnil and isOle(v1) then
+    result := NE
+
+  // Integer
+  else if (a.VType = varInteger) and (b.VType = varInteger) then
+  begin
+    i := a.VInteger - b.VInteger;
+    if i = 0 then
+      result := EQ
+    else if i < 0 then
+      result := LT
+    else
+      result := GT
+    ;
+  end
+
+  // Double
+  else if (a.VType = varDouble) and (b.VType = varDouble) then
+  begin
+    if a.VDouble = b.VDouble then
+      result := EQ
+    else if a.VDouble < b.VDouble then
+      result := LT
+    else
+      result := GT
+    ;
+  end
+  else if (a.VType = varInteger) and (b.VType = varDouble) then
+  begin
+    if a.VInteger = b.VDouble then
+      result := EQ
+    else if a.VInteger < b.VDouble then
+      result := LT
+    else
+      result := GT
+    ;
+  end
+  else if (a.VType = varDouble) and (b.VType = varInteger) then
+  begin
+    if a.VDouble = b.VInteger then
+      result := EQ
+    else if a.VDouble < b.VInteger then
+      result := LT
+    else
+      result := GT
+    ;
+  end
+
+  // Object
+  {$IfDef FPC}
+  else if (a.VType = VarObject) then
+    result := ECbool[(a.VType = b.VType) and (a.VPointer = b.VPointer)]
+  else if (b.VType = VarObject) then
+    result := NE
+  {$Else}
+  else if (a.VType >= VarObject) then
+    result := ECbool[(a.VType = b.VType) and (a.VPointer = b.VPointer)]
+  else if (b.VType >= VarObject) then
+    result := NE
+  {$EndIf}
+
+  // String
+  else if isStr(a.VType) then
+  begin
+    if isStr(b.VType) then
+    begin
+      if isCase then goto _Else;
+
+      i := CompareText(v1^, v2^);
+      if i = 0 then
+        result := EQ
+      else if i < 0 then
+        result := LT
+      else
+        result := GT
+      ;
+    end
+    else if not isNum(v1) then
+      result := NE
+    else
+      goto _Else
+    ;
+  end
+  else if isStr(b.VType) then
+  begin
+    if not isNum(v2) then
+      result := NE
+    else
+      goto _Else
+    ;
+  end
+
+  // Else
+  else _Else:
+  begin
+    if v1^ = v2^ then
+      result := EQ
+    else if v1^ < v2^ then
+      result := LT
+    else
+      result := GT
+    ;
+  end;
+end;
+
+// L = N - 1
+//  0 1 2 3 4 5 >> ++ >> L(ast)
+// -N << -- << -4 -3 -2 -1
+function calcIndex(i, N: fun.int): fun.int;
+begin
+  if i < 0 then Inc(i, N);
+  result := i;
+end;
+
+Function NewStringReplace(const S, OldPattern, NewPattern: string;  Flags: TReplaceFlags): string;
+var
+  OldPat,Srch: string;
+  PatLength,NewPatLength,P,i,PatCount,PrevP: Integer;
+  c,d: pchar;
+begin
+  PatLength:=Length(OldPattern);
+  if PatLength=0 then begin
+    Result:=S;
+    exit;
+  end;
+
+  if rfIgnoreCase in Flags then begin
+    Srch:=UpperCase(S);
+    OldPat:=UpperCase(OldPattern);
+  end else begin
+    Srch:=S;
+    OldPat:=OldPattern;
+  end;
+
+  PatLength:=Length(OldPat);
+  if Length(NewPattern)=PatLength then begin
+    Result:=S;
+    P:=1;
+    repeat
+      P:=PosEx(OldPat,Srch,P);
+      if P>0 then begin
+        for i:=1 to PatLength do
+          Result[P+i-1]:=NewPattern[i];
+        if not (rfReplaceAll in Flags) then exit;
+        inc(P,PatLength);
+      end;
+    until p=0;
+  end else begin
+    P:=1; PatCount:=0;
+    repeat
+      P:=PosEx(OldPat,Srch,P);
+      if P>0 then begin
+        inc(P,PatLength);
+        inc(PatCount);
+        if not (rfReplaceAll in Flags) then break;
+      end;
+    until p=0;
+    if PatCount=0 then begin
+      Result:=S;
+      exit;
+    end;
+    NewPatLength:=Length(NewPattern);
+    SetLength(Result,Length(S)+PatCount*(NewPatLength-PatLength));
+    P:=1; PrevP:=0;
+    c:=pchar(Result); d:=pchar(S);
+    repeat
+      P:=PosEx(OldPat,Srch,P);
+      if P>0 then begin
+        for i:=PrevP+1 to P-1 do begin
+          c^:=d^;
+          inc(c); inc(d);
+        end;
+        for i:=1 to NewPatLength do begin
+          c^:=NewPattern[i];
+          inc(c);
+        end;
+        if not (rfReplaceAll in Flags) then exit;
+        inc(P,PatLength);
+        inc(d,PatLength);
+        PrevP:=P-1;
+      end else begin
+        for i:=PrevP+1 to Length(S) do begin
+          c^:=d^;
+          inc(c); inc(d);
+        end;
+      end;
+    until p=0;
+  end;
+end;
+
+initialization
+  NullValue := Unassigned;
+
+  SetLength(TrueBoolStrs, 2);
+  TrueBoolStrs[0] := 'True';
+  TrueBoolStrs[1] := 'Yes';
+  SetLength(FalseBoolStrs, 3);
+  FalseBoolStrs[0] := 'False';
+  FalseBoolStrs[1] := 'No';
+  FalseBoolStrs[2] := '';
+
+end.

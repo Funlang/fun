@@ -1,0 +1,567 @@
+// Copyright (c) 2010-2026 Zhang Weidong <zwd@funlang.org>
+//
+// Permission is hereby granted, free of charge, to any person obtaining a copy
+// of this software and associated documentation files (the "Software"), to deal
+// in the Software without restriction, including without limitation the rights
+// to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+// copies of the Software, and to permit persons to whom the Software is
+// furnished to do so, subject to the following conditions:
+//
+// The above copyright notice and this permission notice shall be included in all
+// copies or substantial portions of the Software.
+//
+// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+// OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+// SOFTWARE.
+
+function _Comp(env: CEnv; e1, e2: PValue): ECompResult;
+begin
+  result := varComp(e1, e2, env.isCase);
+end;
+
+function _CompIn(env: CEnv; e1, e2: PValue): fun.bool;
+var
+  i: fun.int;
+begin
+  result := false;
+  if asObj(e2) is CSet then
+  begin
+    with CSet(asObj(e2)) do
+    begin
+      for i := 0 to count() -1 do
+      begin
+        if varComp(e1, item[i].value, env.isCase) = EQ then
+        begin
+          result := true;
+          exit;
+        end;
+      end;
+    end;
+  end;
+end;
+
+function _Match(env: CEnv; e1, e2: PValue): CValue;
+var
+  exp: CExp;
+  exs: CExps;
+begin
+  exp := CExp.new(nil);
+  exp.assign(e1);
+  exs := CExps.create;
+  exs.add(CExp.new(nil).parse(e2^));
+  try
+    env.call(exp, 'match', exs, @result);
+  finally
+    del(exp);
+    del(exs);
+  end;
+end;
+
+function _MatchNot(env: CEnv; e1, e2: PValue): fun.bool;
+begin
+  result := not fun.bool(_Match(env, e1, e2));
+end;
+
+//==============================================================
+procedure C01(env: CEnv; e1, e2: PValue);
+{$IfDef CalcOpt}
+  procedure _C01;
+  begin
+    e1^ := e1^ + e2^; // +
+  end;
+
+var i: fun.int; j: fun.dword;
+label _;
+begin
+  with PData(e1)^ do
+  begin
+    if VType = VarInteger then
+    begin
+      case PData(e2).VType of
+        VarInteger:
+        begin
+          i        := VInteger + PData(e2).VInteger;
+          asm
+            jo _
+          end;
+          VInteger := i;
+          exit;
+        end;
+        VarDouble:
+        begin
+          VDouble  := VInteger + PData(e2).VDouble;
+          VType    := VarDouble;
+          exit;
+        end;
+      end;
+    end
+    else if VType = VarDouble then
+    begin
+      case PData(e2).VType of
+        VarInteger:
+        begin
+          VDouble  := VDouble  + PData(e2).VInteger;
+          exit;
+        end;
+        VarDouble:
+        begin
+          VDouble  := VDouble  + PData(e2).VDouble;
+          exit;
+        end;
+      end;
+    end
+    else if (VType = VarLongWord) and (PData(e2).VType = VarLongWord) then
+    begin
+      j         := VLongWord + PData(e2).VLongWord;
+      asm
+        jo _
+      end;
+      VLongWord := j;
+      exit;
+    end;
+  end;
+
+  _: _C01;
+{$Else}
+begin
+  e1^ := e1^ + e2^; // +
+{$EndIf}
+end;
+
+procedure C02(env: CEnv; e1, e2: PValue);
+{$IfDef CalcOpt}
+  procedure _C02;
+  begin
+    e1^ := e1^ - e2^; // -
+  end;
+
+var i: fun.int;
+label _;
+begin
+  with PData(e1)^ do
+  begin
+    if VType = VarInteger then
+    begin
+      case PData(e2).VType of
+        VarInteger:
+        begin
+          i        := VInteger - PData(e2).VInteger;
+          asm
+            //jo _
+          end;
+          VInteger := i;
+          exit;
+        end;
+        VarDouble:
+        begin
+          VDouble  := VInteger - PData(e2).VDouble;
+          VType    := VarDouble;
+          exit;
+        end;
+      end;
+    end
+    else if VType = VarDouble then
+    begin
+      case PData(e2).VType of
+        VarInteger:
+        begin
+          VDouble  := VDouble  - PData(e2).VInteger;
+          exit;
+        end;
+        VarDouble:
+        begin
+          VDouble  := VDouble  - PData(e2).VDouble;
+          exit;
+        end;
+      end;
+    end;
+  end;
+
+  _: _C02;
+{$Else}
+begin
+  e1^ := e1^ - e2^; // -
+{$EndIf}
+end;
+
+procedure C03(env: CEnv; e1, e2: PValue);
+{$IfDef CalcOpt}
+  procedure _C03;
+  begin
+    e1^ := e1^ * e2^; // *
+  end;
+
+var i: fun.int;
+label _;
+begin
+  with PData(e1)^ do
+  begin
+    if VType = VarInteger then
+    begin
+      case PData(e2).VType of
+        VarInteger:
+        begin
+          i        := VInteger * PData(e2).VInteger;
+          asm
+            jo _
+          end;
+          VInteger := i;
+          exit;
+        end;
+        VarDouble:
+        begin
+          VDouble  := VInteger * PData(e2).VDouble;
+          VType    := VarDouble;
+          exit;
+        end;
+      end;
+    end
+    else if VType = VarDouble then
+    begin
+      case PData(e2).VType of
+        VarInteger:
+        begin
+          VDouble  := VDouble  * PData(e2).VInteger;
+          exit;
+        end;
+        VarDouble:
+        begin
+          VDouble  := VDouble  * PData(e2).VDouble;
+          exit;
+        end;
+      end;
+    end;
+  end;
+
+  _: _C03;
+{$Else}
+begin
+  e1^ := e1^ * e2^; // *
+{$EndIf}
+end;
+
+procedure C04(env: CEnv; e1, e2: PValue);
+{$IfDef CalcOpt}
+  procedure _C04;
+  begin
+    e1^ := e1^ / e2^; // /
+  end;
+
+//var i: fun.int;
+label _;
+begin
+  with PData(e1)^ do
+  begin
+    if VType = VarInteger then
+    begin
+      case PData(e2).VType of
+        VarInteger:
+        begin
+          {i        := VInteger / PData(e2).VInteger;
+          asm
+            jo _
+          end;
+          VInteger := i;}
+          VDouble  := VInteger / PData(e2).VInteger;
+          VType    := VarDouble;
+          exit;
+        end;
+        VarDouble:
+        begin
+          VDouble  := VInteger / PData(e2).VDouble;
+          VType    := VarDouble;
+          exit;
+        end;
+      end;
+    end
+    else if VType = VarDouble then
+    begin
+      case PData(e2).VType of
+        VarInteger:
+        begin
+          VDouble  := VDouble  / PData(e2).VInteger;
+          exit;
+        end;
+        VarDouble:
+        begin
+          VDouble  := VDouble  / PData(e2).VDouble;
+          exit;
+        end;
+      end;
+    end;
+  end;
+
+  _: _C04;
+{$Else}
+begin
+  e1^ := e1^ / e2^; // /
+{$EndIf}
+end;
+
+procedure C05(env: CEnv; e1, e2: PValue);
+{$IfDef CalcOpt}
+  procedure _C05;
+  begin
+    e1^ := e1^ div e2^; // d
+  end;
+
+var i: fun.int;
+label _;
+begin
+  with PData(e1)^ do
+  begin
+    if VType = VarInteger then
+    begin
+      case PData(e2).VType of
+        VarInteger:
+        begin
+          i        := VInteger div PData(e2).VInteger;
+          asm
+            //jo _
+          end;
+          VInteger := i;
+          exit;
+        end;
+        {VarDouble:
+        begin
+          VDouble  := VInteger div PData(e2).VDouble;
+          VType    := VarDouble;
+          exit;
+        end;
+      end;
+    end
+    else if VType = VarDouble then
+    begin
+      case PData(e2).VType of
+        VarInteger:
+        begin
+          VDouble  := VDouble  div PData(e2).VInteger;
+          exit;
+        end;
+        VarDouble:
+        begin
+          VDouble  := VDouble  div PData(e2).VDouble;
+          exit;
+        end;}
+      end;
+    end;
+  end;
+
+  _: _C05;
+{$Else}
+begin
+  e1^ := e1^ div e2^; // d
+{$EndIf}
+end;
+
+procedure C06(env: CEnv; e1, e2: PValue);
+{$IfDef CalcOpt}
+  procedure _C06;
+  begin
+    e1^ := e1^ mod e2^; // m
+  end;
+
+var i: fun.int;
+label _;
+begin
+  with PData(e1)^ do
+  begin
+    if VType = VarInteger then
+    begin
+      case PData(e2).VType of
+        VarInteger:
+        begin
+          i        := VInteger mod PData(e2).VInteger;
+          asm
+            //jo _
+          end;
+          VInteger := i;
+          exit;
+        end;
+        {VarDouble:
+        begin
+          VDouble  := VInteger mod PData(e2).VDouble;
+          VType    := VarDouble;
+          exit;
+        end;
+      end;
+    end
+    else if VType = VarDouble then
+    begin
+      case PData(e2).VType of
+        VarInteger:
+        begin
+          VDouble  := VDouble  mod PData(e2).VInteger;
+          exit;
+        end;
+        VarDouble:
+        begin
+          VDouble  := VDouble  mod PData(e2).VDouble;
+          exit;
+        end;}
+      end;
+    end;
+  end;
+
+  _: _C06;
+{$Else}
+begin
+  e1^ := e1^ mod e2^; // m
+{$EndIf}
+end;
+
+procedure C07(env: CEnv; e1, e2: PValue);
+begin
+  e1^ := power(e1^, e2^); // ^
+end;
+
+procedure C08(env: CEnv; e1, e2: PValue);
+begin
+  e1^ := not PData(e1).VLongWord; // N
+end;
+
+procedure C09(env: CEnv; e1, e2: PValue);
+begin
+  e1^ := PData(e1).VLongWord and PData(e2).VLongWord; // A
+end;
+
+procedure C10(env: CEnv; e1, e2: PValue);
+begin
+  e1^ := PData(e1).VLongWord or  PData(e2).VLongWord; // O
+end;
+
+procedure C11(env: CEnv; e1, e2: PValue);
+begin
+  e1^ := PData(e1).VLongWord xor PData(e2).VLongWord; // X
+end;
+
+procedure C12(env: CEnv; e1, e2: PValue);
+begin
+  e1^ := PData(e1).VLongWord shl PData(e2).VLongWord; // L
+end;
+
+procedure C13(env: CEnv; e1, e2: PValue);
+begin
+  e1^ := PData(e1).VLongWord shr PData(e2).VLongWord; // R
+end;
+
+procedure C14(env: CEnv; e1, e2: PValue);
+begin
+  e1^ := fun.str(e1^) + fun.str(e2^); // &
+end;
+
+procedure C15(env: CEnv; e1, e2: PValue);
+begin
+  e1^ := _Comp(env, e1, e2) = EQ; // =
+end;
+
+procedure C16(env: CEnv; e1, e2: PValue);
+begin
+  e1^ := _Comp(env, e1, e2) <> EQ; // !
+end;
+
+procedure C17(env: CEnv; e1, e2: PValue);
+begin
+  e1^ := _Comp(env, e1, e2) = LT; // <
+end;
+
+procedure C18(env: CEnv; e1, e2: PValue);
+begin
+  e1^ := _Comp(env, e1, e2) <> GT; // l
+end;
+
+procedure C19(env: CEnv; e1, e2: PValue);
+begin
+  e1^ := _Comp(env, e1, e2) = GT; // >
+end;
+
+procedure C20(env: CEnv; e1, e2: PValue);
+begin
+  e1^ := _Comp(env, e1, e2) <> LT; // g
+end;
+
+procedure C21(env: CEnv; e1, e2: PValue);
+begin
+  e1^ := _CompIn(env, e1, e2); // i
+end;
+
+procedure C22(env: CEnv; e1, e2: PValue);
+begin
+  e1^ := _Match(env, e1, e2); // ~
+end;
+
+procedure C23(env: CEnv; e1, e2: PValue);
+begin
+  e1^ := _MatchNot(env, e1, e2); // $
+end;
+
+procedure C24(env: CEnv; e1, e2: PValue);
+begin
+  e1^ := not funBool(e1); // n
+end;
+
+procedure C25(env: CEnv; e1, e2: PValue);
+begin
+  e1^ := funBool(e1) and funBool(e2); // a
+end;
+
+procedure C26(env: CEnv; e1, e2: PValue);
+begin
+  e1^ := funBool(e1) or  funBool(e2); // o
+end;
+
+procedure C27(env: CEnv; e1, e2: PValue);
+begin
+  e1^ := funBool(e1) xor funBool(e2); // x
+end;
+
+//==============================================================
+var
+  CX: array[#33..#126] of fun.ptr;
+
+procedure InitCalc();
+begin
+  CX['+'] := @C01;
+  CX['-'] := @C02;
+  CX['*'] := @C03;
+  CX['/'] := @C04;
+  CX['d'] := @C05;
+  CX['m'] := @C06;
+  CX['^'] := @C07;
+  CX['N'] := @C08;
+  CX['A'] := @C09;
+  CX['O'] := @C10;
+  CX['X'] := @C11;
+  CX['L'] := @C12;
+  CX['R'] := @C13;
+  CX['&'] := @C14;
+  CX['='] := @C15;
+  CX['!'] := @C16;
+  CX['<'] := @C17;
+  CX['l'] := @C18;
+  CX['>'] := @C19;
+  CX['g'] := @C20;
+  CX['i'] := @C21;
+  CX['~'] := @C22;
+  CX['$'] := @C23;
+  CX['n'] := @C24;
+  CX['a'] := @C25;
+  CX['o'] := @C26;
+  CX['x'] := @C27;
+end;
+
+//==============================================================
+type
+  CA = procedure (env: CEnv; e1, e2: PValue);
+
+procedure DoCalc(env: CEnv; e1, e2: PValue; op: fun.char);
+begin
+  if CX[op] = nil then
+    e1^ := NullValue
+  else
+    CA(CX[op])(env, e1, e2);
+end;

@@ -1,0 +1,12 @@
+#BNF of BNF
+@name   BNF
+
+BNF     Ref | Literal
+Ref     \b[A-Z]\w++\b
+Literal Escape | Class | Control | Plain
+Escape  \\Q(?:(?!\\E).)*+ | \\[pPxN]\{?\w++ | \\[kg][<'{]\w++ | \\.
+Class   \[(?:[^[\]\\]|\\.)++
+Control \(\*[^)]++ | \(\?(?: \([^)]++ | P[<=>]\w++ | [<'&]\w++ )
+Plain   .
+
+@regex  (?P<Ref>\b[A-Z]\w++\b) | (?P<Literal>(?P<Escape>\\Q(?:(?!\\E).)*+ | \\[pPxN]\{?\w++ | \\[kg][<'{]\w++ | \\.) | (?P<Class>\[(?:[^[\]\\]|\\.)++) | (?P<Control>\(\*[^)]++ | \(\?(?: \([^)]++ | P[<=>]\w++ | [<'&]\w++ )) | (?P<Plain>.))

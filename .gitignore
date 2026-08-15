@@ -1,0 +1,56 @@
+# ===========================================================================
+# Fun language - .gitignore
+# Generated build artifacts and editor files are NOT tracked.
+# Keep source (.pas/.inc/.dpr/.fun/.ebnf/.y/.l) and docs only.
+# ===========================================================================
+
+# ---- Pascal / Delphi / Free Pascal build artifacts ----
+*.dcu
+*.ppu
+*.o
+*.obj
+*.a
+*.so
+*.dylib
+*.s
+*.map
+*.drc
+*.pdb
+*.stat
+*.exe
+*.dll
+*.dylib
+
+# Delphi / CodeGear IDE project/editor files
+*.dof
+*.dsk
+*.cfg
+*.local
+*.identcache
+*.projdata
+*.ddp
+*.res
+
+# Generated Yacc/Lex output (keep the .y / .l / .ebnf sources)
+src/parse/dyl/yyparse.cod
+src/parse/dyl/yylex.cod
+src/parse/bnf/lex.lst
+src/parse/bnf/yacc.lst
+
+# Backup / temp files (matches src/del_~files.bat conventions)
+*.gz
+*.bak
+*.tmp
+*~
+~*.*
+*.~*
+
+# ---- Prebuilt third-party binaries (build from source instead) ----
+# Uncomment to ignore shipped binaries:
+# fun/*.exe
+# fun/*.dll
+
+# ---- OS ----
+.DS_Store
+Thumbs.db
+desktop.ini

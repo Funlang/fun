@@ -1,0 +1,1 @@
+(\b(?:null|nil|true|false)\b|\w+(?=:))

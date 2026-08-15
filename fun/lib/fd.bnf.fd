@@ -1,0 +1,21 @@
+# bnf of fd
+@name    Row
+
+Row      Comment | ^ Ind? Key Ws? Val
+
+Ind      Ws | Ws? Indx Ws?
+Indx     >++ | \d++>
+Key      Qstring | Unqkey
+Val      (?: Qstring | Number | Const )? Ws? $ | `` Length | Unqstr? Ws? $
+
+Unqkey   \S++
+Unqstr   [^\r\n]++
+Const    true | false | null | \{\} | \[\]
+Number   -?\d++(?:\.\d++)?(?:[Ee][+-]?\d++)?
+
+Qstring  \\? (?: '(?:[^']++|'')*+' | "(?:[^"]++|"")*+" | `(?:[^`]++|``)*+` )
+
+Length   x Hex{2} | X Hex{3} | xx Hex{4} | xX Hex{5} | X X Hex{6}
+Hex      [\dA-Fa-f]{2}
+Ws       [\t\x20]++
+Comment  ^[\t\x20]*+\#[^\r\n]*+$
