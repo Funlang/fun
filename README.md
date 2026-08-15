@@ -16,6 +16,7 @@
 - [Why Fun](#why-fun)
 - [Core features](#core-features)
 - [Quick start](#quick-start)
+- [A taste of Fun](#a-taste-of-fun)
 - [The capability ladder](#the-capability-ladder)
 - [The FD data format](#the-fd-data-format)
 - [Foreign function interface](#foreign-function-interface)
@@ -106,6 +107,41 @@ Hello, fun!
 
 ---
 
+## A taste of Fun
+
+Two quick, self-contained snippets that show both ends of the language (the full files live in `fun/demos/benchmarks/`).
+
+Custom operators on classes, first-class functions, composition, and pipelines:
+
+```fun
+# a class with a custom operator
+class Number(me)
+  this['#'] = you -> (me + you) * me * you;
+end class;
+var $ = Number(2);
+?. $ .# 3;            # (2 + 3) * 2 * 3 = 30
+
+# first-class functions, composition & pipelines
+var f = a -> a * 2;
+var g = a -> a + 3;
+?. g(f(1 + 2) + 3);   # 12
+?. 1 + 2 | f + 3 | g; # 12 (same, pipelined)
+```
+
+A data pipeline that turns a query string into a map using regex and collection combinators:
+
+```fun
+use 'lib-regex.fun';
+use 'lib-set.fun';
+var q = 'a=1&b=2&c=';
+var parseQuery = s -> (s | split(/&/) | map(sp_eq) | fromPairs);
+?. parseQuery(q).@toJson(1);  # {"a":"1","b":"2","c":""}
+```
+
+See [`test-high-level-language.fun`](fun/demos/benchmarks/test-high-level-language.fun) for the complete version.
+
+---
+
 ## The capability ladder
 
 What makes Fun unusual is how far a script can go without a separate toolchain:
@@ -119,6 +155,39 @@ What makes Fun unusual is how far a script can go without a separate toolchain:
 | Machine code | `Assembly(code, ...).Load()`      | inline assembly, executable memory allocation   |
 
 For example, `lib-tcc` loads `libtcc.dll` and exposes `tcc_new`, `tcc_compile_string`, `tcc_get_symbol`, ... so you can compile C source from a string and call the resulting symbol immediately. `lib-asm` allocates executable memory, writes machine code, and invokes it; `lib-jit` picks the right path based on the source (`#!c` → TCC, otherwise assembly).
+
+A single script can mix both: `NewJit` compiles C **and** inline assembly at runtime, and each can call straight back into a Fun function (`@toCallback`). The snippet below sums `1..n` — once via assembly, once via compiled C — and hands the result to a Fun callback both times (full version: [`test-jit-cb.fun`](fun/demos/benchmarks/test-jit-cb.fun)):
+
+```fun
+use 'lib-jit.fun';
+fun cb(a, b)          # a Fun callback called from JIT'd code
+  result = a * 2^32 + b;
+end fun;
+
+# assembly path
+var asm = `#!asm i:i
+    mov ecx, dword ptr [esp+04]
+    @sum1ton
+    push eax
+    push edx
+    mov  eax, <test>
+    call eax
+`;
+var jit = NewJit(asm, names: [test: cb.@toCallback(nil, 'ii:i', true)]);
+?. jit.Run(100000);
+
+# C path (compiled at runtime with bundled TCC)
+var c = `#!C ii:i
+  int sum(int n, int (*test)(int, int)) {
+    long long s = 0;
+    for (int i = 1; i <= n; i++) s += i;
+    test((int)(s >> 32), (int)(s & 0xFFFFFFFF));
+    return 1;
+  }
+`;
+jit = NewJit(c);
+?. jit.call(100000, cb.@toCallback(nil, 'ii:C', true));
+```
 
 ---
 

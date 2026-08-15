@@ -16,6 +16,7 @@
 - [为什么是 Fun](#为什么是-fun)
 - [核心特性](#核心特性)
 - [快速开始](#快速开始)
+- [体验 Fun 语言](#体验-fun-语言)
 - [能力阶梯](#能力阶梯)
 - [FD 数据格式](#fd-数据格式)
 - [外部函数接口（FFI）](#外部函数接口ffi)
@@ -106,6 +107,41 @@ Hello, fun!
 
 ---
 
+## 体验 Fun 语言
+
+两个短小、自成一体的小片段，展示语言的两极（完整文件位于 `fun/demos/benchmarks/`）。
+
+类的自定义运算符、一等函数、函数组合与管道：
+
+```fun
+# 带自定义运算符的类
+class Number(me)
+  this['#'] = you -> (me + you) * me * you;
+end class;
+var $ = Number(2);
+?. $ .# 3;            # (2 + 3) * 2 * 3 = 30
+
+# 一等函数、组合与管道
+var f = a -> a * 2;
+var g = a -> a + 3;
+?. g(f(1 + 2) + 3);   # 12
+?. 1 + 2 | f + 3 | g; # 12（同样结果，用管道写）
+```
+
+用正则与集合组合子把查询串解析成映射的数据管道：
+
+```fun
+use 'lib-regex.fun';
+use 'lib-set.fun';
+var q = 'a=1&b=2&c=';
+var parseQuery = s -> (s | split(/&/) | map(sp_eq) | fromPairs);
+?. parseQuery(q).@toJson(1);  # {"a":"1","b":"2","c":""}
+```
+
+完整版本见 [`test-high-level-language.fun`](fun/demos/benchmarks/test-high-level-language.fun)。
+
+---
+
 ## 能力阶梯
 
 Fun 的特殊之处在于，一段脚本在无需独立工具链的情况下能走多远：
@@ -119,6 +155,39 @@ Fun 的特殊之处在于，一段脚本在无需独立工具链的情况下能�
 | 机器码     | `Assembly(code, ...).Load()`      | 内联汇编、可执行内存分配                         |
 
 例如，`lib-tcc` 加载 `libtcc.dll` 并暴露 `tcc_new`、`tcc_compile_string`、`tcc_get_symbol` 等，从而你可以从字符串编译 C 源码并立即调用所得到的符号。`lib-asm` 分配可执行内存、写入机器码并调用之；`lib-jit` 则根据源码形态自动选择路径（`#!c` → TCC，否则走汇编）。
+
+一段脚本可以同时混合两者：`NewJit` 在运行时编译 C **和**内联汇编，并且两者都能通过 `@toCallback` 直接回调回 Fun 函数。下面的片段对 `1..n` 求和——一次走汇编、一次走编译出的 C，两次都把结果交给 Fun 回调（完整版本见 [`test-jit-cb.fun`](fun/demos/benchmarks/test-jit-cb.fun)）：
+
+```fun
+use 'lib-jit.fun';
+fun cb(a, b)          # 由 JIT 编译出的代码回调的 Fun 函数
+  result = a * 2^32 + b;
+end fun;
+
+# 汇编路径
+var asm = `#!asm i:i
+    mov ecx, dword ptr [esp+04]
+    @sum1ton
+    push eax
+    push edx
+    mov  eax, <test>
+    call eax
+`;
+var jit = NewJit(asm, names: [test: cb.@toCallback(nil, 'ii:i', true)]);
+?. jit.Run(100000);
+
+# C 路径（用内置 TCC 在运行时编译）
+var c = `#!C ii:i
+  int sum(int n, int (*test)(int, int)) {
+    long long s = 0;
+    for (int i = 1; i <= n; i++) s += i;
+    test((int)(s >> 32), (int)(s & 0xFFFFFFFF));
+    return 1;
+  }
+`;
+jit = NewJit(c);
+?. jit.call(100000, cb.@toCallback(nil, 'ii:C', true));
+```
 
 ---
 
