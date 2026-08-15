@@ -6,7 +6,7 @@
 
 - 版本：**9.0**
 - 官网：<https://funlang.org>
-- 作者：Zhang Weidong &lt;zwd@funlang.org>
+- 作者：张卫东 &lt;zwd@funlang.org>
 - 授权：MIT（另有商业授权条款，见下文「许可证」）
 
 ---
@@ -324,4 +324,4 @@ Fun 采用 **双授权** 模式：
 
 ---
 
-© 2010-2026 Zhang Weidong &lt;zwd@funlang.org>
+© 2010-2026 张卫东 &lt;zwd@funlang.org>
