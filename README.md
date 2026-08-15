@@ -1,54 +1,80 @@
-# Fun 语言
+# Fun Language
 
-> **Fun** —— 一门以中文为关键字、内置 JSON/FD 数据格式与 PCRE 正则的嵌入式脚本语言。
-> 语言核心使用 Pascal（Delphi / Free Pascal）编写，自带解释器 VM 与标准库，可编译为命令行程序或嵌入第三方应用。
+> A lightweight, embeddable, **data-centric scripting language** whose reach extends from JSON/FD data all the way down to runtime-compiled C and raw machine code.
 
-**English**: [README.en.md](README.en.md) | **中文**: README.md
+**English** (this file) · [简体中文](README.zh.md)
 
-- 语言版本：**9.0**
-- 官方站点：<https://funlang.org>
-- 作者：Zhang Weidong &lt;zwd@funlang.org&gt;
-- 授权：MIT（另有商业授权条款，见下文「许可证」）
-
----
-
-## 目录
-
-- [特性](#特性)
-- [快速开始](#快速开始)
-- [目录结构](#目录结构)
-- [构建](#构建)
-- [标准库](#标准库)
-- [嵌入运行时 fun.dll](#嵌入运行时-fundll)
-- [许可证](#许可证)
+- Version: **9.0**
+- Website: <https://funlang.org>
+- Author: Zhang Weidong &lt;zwd@funlang.org>
+- License: MIT, plus commercial terms (see [License](#license))
 
 ---
 
-## 特性
+## Table of contents
 
-- **中文关键字**：`fun` / `end fun`、`if` / `then` / `else`、`loop`、`case`、`try` / `except`、`class` 等，语法贴近自然语言。
-- **动态类型 + 内建集合**：数字、字符串、时间、正则、数组（list）、集合（set）与树（tree）。
-- **函数式特性**：匿名函数（lambda）、闭包、柯里化、`->` 管道、默认参数、可变参数。
-- **内置数据格式**：JSON 与 **FD**（一种兼容 JSON、对人类与 AI 友好的类 Markdown 格式），支持双向转换与 SSE 压缩。
-- **内嵌 PCRE 正则引擎**：无需外部依赖。
-- **嵌入式运行时**：`fun.dll` 可嵌入第三方应用，作为扩展脚本语言（见授权说明）。
-- **跨平台**：Windows（32/64 位）、Linux、ARM、Windows CE 交叉编译支持。
-- **附带 IDE**：`funide`，以及记事本 `notepad--`、`odbc-search`、性能基准等完整示例。
+- [Why Fun](#why-fun)
+- [Core features](#core-features)
+- [Quick start](#quick-start)
+- [The capability ladder](#the-capability-ladder)
+- [The FD data format](#the-fd-data-format)
+- [Foreign function interface](#foreign-function-interface)
+- [Keyword aliasing](#keyword-aliasing)
+- [Embedding with fun.dll](#embedding-with-fundll)
+- [Repository layout](#repository-layout)
+- [Building](#building)
+- [Standard library](#standard-library)
+- [Examples](#examples)
+- [License](#license)
 
 ---
 
-## 快速开始
+## Why Fun
 
-### 运行脚本
+Fun is designed around a simple premise: **data and code should be equally first-class, and a script should be able to reach down to the machine without leaving the language.**
+
+Most scripting languages either stay high-level (easy, but you hit a wall at the FFI) or force you to write C for performance-critical parts. Fun collapses that ladder into one runtime:
+
+- Manipulate **JSON and FD** data with native list / set / tree collections;
+- call arbitrary native code through a **compact FFI signature**;
+- compile **C at runtime** with a bundled Tiny C Compiler;
+- drop to **inline assembly / JIT** for the tightest loops;
+
+all from pure script, in a single embeddable binary.
+
+Fun is written in Pascal (Delphi / Free Pascal). The core is a small tree-walking interpreter with a dynamic value model, an object system, closures, and modules — deliberately compact so it can be embedded as `fun.dll` or run as a standalone `fun.exe`.
+
+---
+
+## Core features
+
+- **Dynamic, data-centric value model** — numbers, strings, time, regex, and first-class collections: list (array), set, and tree, built on a variant-based runtime.
+- **First-class functions** — anonymous functions, function references, currying, default and variadic parameters, and `->` pipelines.
+- **Object system** — `class`, `this` / `base`, methods, and property get/set dispatch (methods, getters and setters are dispatched uniformly through the `.` operator).
+- **Modules** — `use 'file.fun'` (optionally `as alias`) pulls in other scripts; the runtime tracks module state and dependencies.
+- **Regex as a value type** — bundled PCRE engine with inline regex literals (`/.../`) and match operators (`=~`, `!~`).
+- **Built-in data formats** — JSON and **FD**, a JSON-compatible, Markdown-like format friendly to humans and to AI (see [below](#the-fd-data-format)).
+- **Runtime C & machine code** — bundled Tiny C Compiler, JIT, and inline assembly (see [the capability ladder](#the-capability-ladder)).
+- **Compact FFI** — call DLL/shared-library functions with a terse signature string (see [FFI](#foreign-function-interface)).
+- **Keyword aliasing** — a canonical English keyword set with pluggable alias packs (Chinese, French, custom) selected at runtime (see [below](#keyword-aliasing)).
+- **Cross-platform** — Windows (32/64-bit), Linux, ARM, and Windows CE.
+- **Dual distribution** — command-line `fun.exe` and embeddable runtime `fun.dll` exporting a simple `Run` interface.
+- **Self-hosted standard library** — 58 modules written in Fun itself, from JSON/YAML/XML to ORM, async, UI, and native bindings.
+
+---
+
+## Quick start
+
+Run a script:
 
 ```text
-fun.exe <file.fun>            # 运行脚本文件（支持 .fun / .foo / .fxx）
-fun.exe -v <file.fun>         # 显示编译与执行耗时
-fun.exe -log[:log.txt] -gui   # 输出到日志 / 以 GUI 模式运行
-fun.exe -key:key_cn.ini       # 加载关键字/别名映射
+fun.exe <file.fun>            # run a script (.fun / .foo / .fxx)
+fun.exe -v <file.fun>         # show compile & run timing
+fun.exe -log[:log.txt] -gui   # log output / run in GUI mode
+fun.exe -key:key_cn.ini       # load a keyword alias pack
 ```
 
-### 第一个程序
+Hello world (canonical keywords):
 
 ```fun
 fun foo()
@@ -69,7 +95,7 @@ end fun;
 ?. max(9, 1);
 ```
 
-运行：
+Run:
 
 ```text
 > fun.exe fun/demo/fun.fun
@@ -78,99 +104,155 @@ Hello, fun!
 9
 ```
 
-更多示例见 [`fun/demo`](fun/demo)（语法演示）与 [`fun/demos`](fun/demos)（完整应用与基准测试）。
+---
+
+## The capability ladder
+
+What makes Fun unusual is how far a script can go without a separate toolchain:
+
+| Layer        | Facility                          | Backing                                          |
+| ------------ | --------------------------------- | ------------------------------------------------ |
+| High-level   | JSON / FD data, list / set / tree | native collections and parsers                  |
+| Native calls | `dll.getapi(name, 'signature')`   | FFI with a compact signature convention         |
+| C at runtime | `ccompile(code, ...)`             | bundled Tiny C Compiler (`libtcc.dll`)          |
+| JIT          | `NewJit(...)`                     | dispatch between C (TCC) and assembly           |
+| Machine code | `Assembly(code, ...).Load()`      | inline assembly, executable memory allocation   |
+
+For example, `lib-tcc` loads `libtcc.dll` and exposes `tcc_new`, `tcc_compile_string`, `tcc_get_symbol`, ... so you can compile C source from a string and call the resulting symbol immediately. `lib-asm` allocates executable memory, writes machine code, and invokes it; `lib-jit` picks the right path based on the source (`#!c` → TCC, otherwise assembly).
 
 ---
 
-## 目录结构
+## The FD data format
+
+FD is a data format designed to be **readable by humans and by AI**, and interoperable with JSON:
+
+- JSON-compatible structure (nested keys, arrays);
+- indentation-based, Markdown-like syntax;
+- optional SSE compression;
+- bidirectional conversion with JSON (`@toJson`, `getJson`).
+
+Its defining trait is that **FD is self-describing**: the parser in `lib-fd.fun` is generated from a BNF grammar written in FD itself (`fd.bnf.fd`). The grammar file `src/parse/bnf/fun.ebnf` documents the language grammar in the same spirit.
+
+---
+
+## Foreign function interface
+
+Fun exposes native functions through a compact **signature-string** convention. Examples drawn from the standard library:
+
+```fun
+'kernel32'.getapi('VirtualAlloc', 'iiii:i');  // 4 int args -> int
+'tcc'.getapi('tcc_new', 'v:i');               // void arg -> int
+```
+
+The signature encodes each argument's type, then `:`, then the return type (`i` = int, `s` = string, `v` = void, `d` = double, etc.). The same mechanism drives COM (`lib-winole`), the Windows API (`lib-winapi`), and the C runtime.
+
+---
+
+## Keyword aliasing
+
+The interpreter's canonical keywords are English (`fun`, `if`, `then`, `loop`, `class`, ...). Because keywords are resolved through an alias layer (`ParseAlias`), you can supply **pluggable alias packs** at startup:
+
+```text
+fun.exe -key:key_cn.ini   # Chinese keywords (函数=fun, 如果=if, ...)
+fun.exe -key:key_fr.ini   # French keywords
+```
+
+Included packs: `key_cn.ini` (简体中文), `key_fr.ini` (français), and `key_pua.ini` (custom/private-use). The language itself is keyword-neutral — aliases are a localization/accessibility feature, not a different language.
+
+---
+
+## Embedding with fun.dll
+
+`fun.dll` is the embeddable runtime for integrating Fun scripts into third-party applications:
+
+```pascal
+Run(PChar('script.fun'));  // compile the script
+Run(scriptContent);        // execute it
+Run(-1);                   // release
+```
+
+- **Free use (MIT)**: personal study, internal tools, and products released under an open-source license.
+- **Commercial use**: embedding `fun.dll` in a closed-source commercial product (exe/dmg/apk or a SaaS backend) requires a commercial license — see [`LICENSE.dll`](LICENSE.dll).
+
+---
+
+## Repository layout
 
 ```text
 fun/
 ├── src/
-│   ├── core/          # 解释器核心（VM、类型系统、流程控制、IO）
-│   ├── parse/         # 词法/语法解析器
-│   │   └── bnf/       #   文法定义：fun.ebnf、yacc.y、lex.l（生成 .inc/.cod）
-│   ├── lib/           # 内建运行时库（winapi、winole、UI、host 等）
-│   ├── regex/pcre/    # 内嵌 PCRE 正则引擎
-│   ├── 3rd/           # 第三方组件（KOL）
-│   ├── utils/         # 工具函数
-│   └── prj/fun/       # 工程与构建脚本（funcmd.dpr，Delphi/FPC）
+│   ├── core/          # Interpreter core (value model, object system, control flow, IO)
+│   ├── parse/         # Lexer/parser
+│   │   └── bnf/       #   Grammar: fun.ebnf, yacc.y, lex.l (generates .inc/.cod)
+│   ├── lib/           # Built-in runtime library (winapi, winole, UI, host, etc.)
+│   ├── regex/pcre/    # Bundled PCRE regex engine
+│   ├── 3rd/           # Third-party components (KOL)
+│   ├── utils/         # Utility functions
+│   └── prj/fun/       # Projects & build scripts (funcmd.dpr, Delphi/FPC)
 ├── fun/
-│   ├── lib/           # 标准库（纯 Fun 编写，60+ 模块）
-│   ├── demo/          # 语言语法演示
-│   ├── demos/         # 完整应用与基准测试
-│   └── key_*.ini      # 关键字/别名映射
-└── LICENSE*           # 授权文件
+│   ├── lib/           # Standard library (pure Fun, 58 modules)
+│   ├── demo/          # Language syntax demos
+│   ├── demos/         # Full applications & benchmarks
+│   └── key_*.ini      # Keyword alias packs (CN / FR / PUA)
+└── LICENSE*           # License files
 ```
 
 ---
 
-## 构建
+## Building
 
-`fun` 内核使用 Pascal 编写，源码入口为 `src/prj/fun/funcmd.dpr`。
+The Fun core is Pascal; the source entry point is `src/prj/fun/funcmd.dpr`.
 
-支持编译器：
+Supported toolchains:
 
-| 目标                | 脚本                                   | 编译器    |
-| ------------------- | -------------------------------------- | --------- |
-| Windows 32 位       | `src/prj/fun/make-2006.bat` / `-2009.bat` | Delphi 2006 / 2009 |
-| Linux（i386）       | `make-linux.bat`                       | FPC 2.4.0 |
-| Linux / ARM         | `make-arm-linux.bat`                   | FPC 交叉  |
-| Windows 64 位       | `make-win64.bat`                       | FPC 交叉  |
-| Windows CE / ARM    | `make-wince.bat`                       | FPC 交叉  |
+| Target                 | Script                                    | Toolchain      |
+| ---------------------- | ----------------------------------------- | -------------- |
+| Windows 32-bit         | `src/prj/fun/make-2006.bat` / `-2009.bat` | Delphi 2006 / 2009 |
+| Linux (i386)           | `make-linux.bat`                          | FPC 2.4.0      |
+| Linux / ARM            | `make-arm-linux.bat`                      | FPC cross      |
+| Windows 64-bit         | `make-win64.bat`                          | FPC cross      |
+| Windows CE / ARM       | `make-wince.bat`                          | FPC cross      |
 
-> 以 `-DFunDll` 编译可生成嵌入式运行时库 `fun.dll`，导出 `Run` 接口。
-> 构建产物已加入 `.gitignore`，不纳入版本控制。
+Building with `-DFunDll` produces the embeddable runtime `fun.dll`, which exports the `Run` interface. Build artifacts are covered by `.gitignore` and are not versioned.
 
-完整文法定义见 [`src/parse/bnf/fun.ebnf`](src/parse/bnf/fun.ebnf)。
-
----
-
-## 标准库
-
-标准库位于 [`fun/lib`](fun/lib)，以纯 Fun 编写（60+ 模块），覆盖：
-
-- **数据**：`lib-json`、`lib-yaml`、`lib-xml`、`lib-base64`、`lib-cstruct`、`lib-md5`、`lib-crypt`
-- **集合/算法**：`lib-set`、`lib-tree`、`lib-stack`、`lib-dyns`、`lib-math`
-- **文本**：`lib-string`、`lib-regex`、`lib-match`、`lib-unicode`
-- **系统/IO**：`lib-file`、`lib-os`、`lib-time`、`lib-cmdline`、`lib-proc`
-- **网络**：`lib-winsock`、`lib-ajax`、`lib-jsonrpc`
-- **数据库**：`lib-orm`、`lib-orm-pro`、`lib-orm-gen`、`lib-orm-rpc`、`lib-orm-cte`、`lib-ado`、`lib-ado-schema`
-- **内建接口**：`lib-winapi`、`lib-winole`、`lib-tcc`（C 编译）、`lib-jit`、`lib-asm`、`lib-asm-pro`
-- **UI**：`lib-ui`、`lib-ui-base`、`lib-dialog`、`lib-trayicon`
-- **并发/异步**：`lib-async`、`lib-jsasync`、`lib-bind`、`lib-message`
+The full grammar is defined in [`src/parse/bnf/fun.ebnf`](src/parse/bnf/fun.ebnf).
 
 ---
 
-## 嵌入运行时 fun.dll
+## Standard library
 
-`fun.dll` 是可嵌入的运行时库，允许第三方应用将 Fun 脚本作为扩展语言集成到自身进程中：
+The standard library in [`fun/lib`](fun/lib) is written in pure Fun (58 modules):
 
-```pascal
-// 编译、运行、释放三段式接口
-Run(PChar('script.fun'));  // 编译脚本
-Run(scriptContent);        // 执行
-Run(-1);                   // 释放
-```
-
-- 免费使用（MIT）：个人学习、内部工具、以开源协议发布的产品。
-- **商业使用**：将 `fun.dll` 嵌入闭源商业产品（exe/dmg/apk 或 SaaS 后端）需购买商业授权，见 [`LICENSE.dll`](LICENSE.dll)。
-
----
-
-## 许可证
-
-`fun` 采用 **双授权** 模式：
-
-1. **开源许可证（MIT）** —— 见 [`LICENSE`](LICENSE)。
-   允许自由使用、修改、分发源码，只要保留版权声明。
-
-2. **商业授权**（额外条款，仅适用于下列闭源分发场景）：
-   - 对内核做实质性修改并以闭源形式商业化分发 —— 见 [`LICENSE.custom`](LICENSE.custom)；
-   - 将 `fun.dll` 嵌入闭源商业产品或 SaaS 后端 —— 见 [`LICENSE.dll`](LICENSE.dll)。
-
-**简单说明**：内部使用、学习研究、以及以开源方式（MIT/GPL 等）发布修改版均免费。只有把修改过的内核或 `fun.dll` 当作闭源商业产品对外售卖时才需要付费授权。商业授权为一次性授权，按项目/公司计费，请联系 &lt;zwd@funlang.org&gt;。
+- **Data**: `lib-json`, `lib-yaml`, `lib-xml`, `lib-base64`, `lib-cstruct`, `lib-md5`, `lib-crypt`
+- **Collections / algorithms**: `lib-set`, `lib-tree`, `lib-stack`, `lib-dyns`, `lib-math`
+- **Text**: `lib-string`, `lib-regex`, `lib-match`, `lib-unicode`
+- **System / IO**: `lib-file`, `lib-os`, `lib-time`, `lib-cmdline`, `lib-proc`
+- **Network**: `lib-winsock`, `lib-ajax`, `lib-jsonrpc`
+- **Databases**: `lib-orm`, `lib-orm-pro`, `lib-orm-gen`, `lib-orm-rpc`, `lib-orm-cte`, `lib-ado`, `lib-ado-schema`
+- **Native / low-level**: `lib-winapi`, `lib-winole`, `lib-tcc` (C compile), `lib-jit`, `lib-asm`, `lib-asm-pro`
+- **UI**: `lib-ui`, `lib-ui-base`, `lib-dialog`, `lib-trayicon`
+- **Concurrency / async**: `lib-async`, `lib-jsasync`, `lib-bind`, `lib-message`
 
 ---
 
-© 2010-2026 Zhang Weidong &lt;zwd@funlang.org&gt;
+## Examples
+
+- [`fun/demo`](fun/demo) — syntax demos: functions, closures, currying, classes, objects, sets, regex, and exception handling.
+- [`fun/demos`](fun/demos) — full applications and benchmarks: the `notepad--` editor, `odbc-search`, and performance/assembly/JIT benchmarks.
+
+---
+
+## License
+
+Fun is distributed under a **dual-license** model:
+
+1. **Open-source (MIT)** — see [`LICENSE`](LICENSE). You are free to use, modify, and redistribute the source, provided the copyright notice is retained.
+2. **Commercial license** (additional terms that apply only to these closed-source redistribution cases):
+   - Substantially modifying the kernel and commercially distributing the result closed-source — see [`LICENSE.custom`](LICENSE.custom);
+   - Embedding `fun.dll` in a closed-source commercial product or SaaS backend — see [`LICENSE.dll`](LICENSE.dll).
+
+**In short**: internal use, study/research, and releasing modified versions under an open-source license (MIT/GPL etc.) are all free. A commercial license is needed only when you sell a modified kernel or `fun.dll` as a closed-source commercial product. Commercial licenses are one-time, priced per project/company — contact &lt;zwd@funlang.org&gt;.
+
+---
+
+© 2010-2026 Zhang Weidong &lt;zwd@funlang.org>

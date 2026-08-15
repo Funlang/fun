@@ -1,52 +1,54 @@
-# 贡献指南（CONTRIBUTING）
+# Contributing
 
-感谢你有兴趣为 **Fun 语言** 贡献代码！请遵循以下约定，以保证协作顺畅。
+Thanks for your interest in contributing to **Fun**! Please follow the conventions below so we can collaborate smoothly.
 
-## 分支与提交
+**English** (this file) · [简体中文](CONTRIBUTING.zh.md)
 
-- 本项目遵循「单一主干 `main`」的简单模型。修复与功能直接基于 `main` 提交。
-- 提交信息使用简洁的祈使句，例如：
+## Branching & commits
+
+- This project follows a simple single-trunk (`main`) model. Fixes and features are committed directly to `main`.
+- Use short, imperative commit messages, e.g.:
   - `Fix: parser handles empty array literal`
   - `Add: lib-yaml round-trip test`
   - `Docs: update build matrix`
-- 尽量让每个提交只包含一个逻辑变更，便于回溯。
+- Keep each commit to one logical change so it is easy to bisect.
 
-## 编码与换行
+## Encoding & line endings
 
-- 语言核心为 Pascal（Delphi / Free Pascal），源码文件使用 **CRLF** 换行（Windows 工具链）。
-- 部分历史文件为 GBK 编码。**新增/修改的文件请尽量使用 UTF-8**，并保持既有文件的编码与换行方式，避免造成无意义的整文件 diff。
-- 请勿提交构建产物（`.exe/.dll/.obj/.dcu/.ppu/.res/.dof/.cfg` 等），它们已被 `.gitignore` 忽略。
+- The language core is Pascal (Delphi / Free Pascal); source files use **CRLF** line endings (Windows toolchain).
+- Some legacy files are GBK-encoded. **Prefer UTF-8 for new/modified files**, and preserve the encoding and line endings of existing files to avoid noisy whole-file diffs.
+- Do not commit build artifacts (`.exe/.dll/.obj/.dcu/.ppu/.res/.dof/.cfg`, etc.) — they are covered by `.gitignore`.
 
-## 目录约定
+## Directory conventions
 
-| 路径          | 内容                                |
-| ------------- | ----------------------------------- |
-| `src/core/`   | 解释器核心（VM、类型、流程控制）    |
-| `src/parse/`  | 词法/语法解析器（`bnf/fun.ebnf`）   |
-| `src/lib/`    | 内建运行时库                        |
-| `fun/lib/`    | 纯 Fun 编写的标准库                 |
-| `fun/demo/`   | 语言语法演示                        |
-| `fun/demos/`  | 完整应用与基准测试                  |
+| Path          | Contents                                  |
+| ------------- | ----------------------------------------- |
+| `src/core/`   | Interpreter core (value model, objects, control flow) |
+| `src/parse/`  | Lexer/parser (`bnf/fun.ebnf`)             |
+| `src/lib/`    | Built-in runtime library                  |
+| `fun/lib/`    | Standard library written in Fun           |
+| `fun/demo/`   | Language syntax demos                     |
+| `fun/demos/`  | Full applications and benchmarks          |
 
-## 标准库规范
+## Standard library guidelines
 
-`fun/lib` 下的标准库模块：
+For modules in `fun/lib`:
 
-- 文件头保留版权声明与 `SPDX-License-Identifier: MIT`。
-- 以 `# lib-xxx` 标题块说明内建函数、参数与行为。
-- 请在 `fun/demo/` 中添加对应的测试脚本验证改动。
+- Keep the copyright header and `SPDX-License-Identifier: MIT`.
+- Document the built-in functions, parameters, and behavior in the leading `# lib-xxx` comment block.
+- Add a matching test script under `fun/demo/` to exercise your changes.
 
-## 构建
+## Building
 
-构建脚本位于 `src/prj/fun/`（Delphi 2006/2009 与 Free Pascal 2.4.0，支持 Windows/Linux/ARM/WinCE 交叉编译）。改动解析器后，请确保语法定义 `src/parse/bnf/fun.ebnf`、`yacc.y`、`lex.l` 同步更新。
+Build scripts live in `src/prj/fun/` (Delphi 2006/2009 and Free Pascal 2.4.0, with Windows/Linux/ARM/WinCE cross-compilation). After touching the parser, keep the grammar definitions `src/parse/bnf/fun.ebnf`, `yacc.y`, and `lex.l` in sync.
 
-## 提交 Pull Request
+## Opening a Pull Request
 
-1. `git pull` 同步最新 `main`。
-2. 创建功能分支，完成改动并补充测试。
-3. 运行相关演示脚本确认行为符合预期。
-4. 发起 Pull Request，描述改动内容与验证方式。
+1. `git pull` to sync with the latest `main`.
+2. Create a feature branch, make your change, and add tests.
+3. Run the relevant demo scripts to confirm behavior.
+4. Open a Pull Request describing the change and how it was verified.
 
 ---
 
-有问题或商业授权咨询，请联系 &lt;zwd@funlang.org&gt;。
+Questions or commercial licensing inquiries: &lt;zwd@funlang.org&gt;.

@@ -1,20 +1,22 @@
 # Changelog
 
-本项目采用 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.0.0/) 风格记录主要变更。
-格式遵循 [语义化版本](https://semver.org/lang/zh-CN/)。
+This project records notable changes in the style of [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), and follows [Semantic Versioning](https://semver.org/).
 
-## [未发布]
+**English** (this file) · [简体中文](CHANGELOG.zh.md)
 
-- 首次以开源形式发布 Fun 语言核心与标准库源码。
-- 新增 `README.md`、`CONTRIBUTING.md`、`.gitignore`、`.gitattributes`。
-- 语言版本：9.0。
+## [Unreleased]
+
+- First open-source release of the Fun core and standard library source.
+- Added `README.md`, `CONTRIBUTING.md`, `.gitignore`, `.gitattributes`.
+- Language version: 9.0.
 
 ## [9.0] - 2026
 
-- 中文关键字语法、内置 JSON/FD 数据格式、内嵌 PCRE 正则。
-- 解释器核心（VM/类型/流程控制）、内建运行时库与 60+ 标准库模块。
-- 命令行程序 `funcmd` 与嵌入式运行时 `fun.dll` 双形态构建。
-- Delphi 2006/2009 与 Free Pascal 跨平台构建（Windows/Linux/ARM/WinCE）。
-- 附带 IDE（`funide`）及示例应用（`notepad--`、`odbc-search`、基准测试）。
+- Data-centric scripting: built-in JSON and FD data formats, native list / set / tree collections, bundled PCRE regex.
+- Interpreter core (value model / objects / control flow), built-in runtime library, and 58 standard-library modules.
+- Dual build: command-line `funcmd` and embeddable runtime `fun.dll`.
+- Delphi 2006/2009 and Free Pascal cross-platform builds (Windows / Linux / ARM / WinCE).
+- Companion IDE (`funide`) and example applications (`notepad--`, `odbc-search`, benchmarks).
+- Runtime C compilation (TCC), JIT, and inline assembly via the standard library.
 
-> 注：本仓库在开源发布前已有长期的历史版本（可追溯到 2010 年）。由于历史提交未随源码迁移，此处的 Changelog 从开源首版开始记录。
+> Note: this repository has a long pre-release history (back to 2010) that was not carried over into the open-source commits, so the changelog begins at the first open-source release.
