@@ -189,6 +189,8 @@ jit = NewJit(c);
 ?. jit.call(100000, cb.@toCallback(nil, 'ii:C', true));
 ```
 
+> **平台说明**：上面的 `#!asm` 块是 32 位 x86（Windows）汇编（基于 `esp` 相对寻址、`ecx`）。`#!C` 路径可跨平台，但汇编片段与架构相关——在 Linux/ARM 上请改用 C 形式，或按目标 ABI 重写汇编。
+
 ---
 
 ## FD 数据格式
@@ -272,7 +274,7 @@ fun/
 
 Fun 核心为 Pascal，源码入口为 `src/prj/fun/funcmd.dpr`。
 
-支持的工具链：
+工具链路径集中在一个文件里：[`src/prj/fun/setenv.bat`](src/prj/fun/setenv.bat)。只需修改一次，指向你安装的 Delphi / Free Pascal；或在构建前预先设置 `FPC`、`DELPHI2006`、`DELPHI2009` 环境变量——每个 `make-*.bat` 脚本都会调用它并读取这些路径。支持的工具链：
 
 | 目标                | 脚本                                   | 工具链        |
 | ------------------- | -------------------------------------- | ------------- |

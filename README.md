@@ -189,6 +189,8 @@ jit = NewJit(c);
 ?. jit.call(100000, cb.@toCallback(nil, 'ii:C', true));
 ```
 
+> **Platform note**: the `#!asm` block above is 32-bit x86 (Windows) assembly (`esp`-relative args, `ecx`). The `#!C` path is portable, but the assembly snippet is architecture-specific — on Linux/ARM use the C form or rewrite the assembly for the target ABI.
+
 ---
 
 ## The FD data format
@@ -272,7 +274,7 @@ fun/
 
 The Fun core is Pascal; the source entry point is `src/prj/fun/funcmd.dpr`.
 
-Supported toolchains:
+Toolchain locations are centralized in one file: [`src/prj/fun/setenv.bat`](src/prj/fun/setenv.bat). Edit it once to point at your installed Delphi / Free Pascal, or set the `FPC`, `DELPHI2006`, `DELPHI2009` environment variables beforehand — every `make-*.bat` script calls it and picks up the paths. Supported toolchains:
 
 | Target                 | Script                                    | Toolchain      |
 | ---------------------- | ----------------------------------------- | -------------- |

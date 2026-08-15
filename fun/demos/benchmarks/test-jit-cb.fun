@@ -1,5 +1,8 @@
 use 'lib-jit.fun';
 
+# NOTE: the #!asm snippet below is 32-bit x86 (Windows) assembly.
+# On Linux/ARM use the #!C path (portable) or rewrite the assembly for the target ABI.
+
 var ii = 0;
 fun cb(a, b)
   ii = a * 2^32 + b;

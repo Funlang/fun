@@ -1,2 +1,4 @@
-set dcc=D:\Borland\Delphi2006\bin\dcc32
+@echo off
+call setenv.bat
+set dcc=%DELPHI2006%\bin\dcc32
 %dcc% funcmd -B -Q -GD -$D+ %*
