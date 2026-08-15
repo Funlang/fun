@@ -547,26 +547,26 @@ begin
   moff := MatchedOffset;
   mlen := MatchedLength;
   rlen := Length(Result);
-  if (rlen = 0) and (mlen = 0) then // ÎÞ -> ÎÞ
+  if (rlen = 0) and (mlen = 0) then // æ—  -> æ— 
     // None
-  else if rlen = 0 then             // ÓÐ -> ÎÞ
+  else if rlen = 0 then             // æœ‰ -> æ— 
     Delete(FSubject, moff, mlen)
-  else if mlen = 0 then             // ÎÞ -> ÓÐ
+  else if mlen = 0 then             // æ—  -> æœ‰
     Insert(Result, FSubject, moff)
-  else begin                        // ÓÐ -> ÓÐ
+  else begin                        // æœ‰ -> æœ‰
     d := @FSubject[moff];
     s := @Result[1];
-    if rlen = mlen then             //    -> µÈ
+    if rlen = mlen then             //    -> ç­‰
       Move(s^, d^, mlen)
     else begin
       len := Length(FSubject);
-      if rlen < mlen then begin     //    -> ¶Ì
+      if rlen < mlen then begin     //    -> çŸ­
         d2 := @FSubject[moff+rlen];
         s2 := @FSubject[moff+mlen];
         Move(s^ , d^ , rlen);
         Move(s2^, d2^, len-moff-mlen+1);
         SetLength(FSubject, len+rlen-mlen);
-      end else begin                //    -> ³¤
+      end else begin                //    -> é•¿
         SetLength(FSubject, len+rlen-mlen);
         d2 := @FSubject[moff+rlen];
         s2 := @FSubject[moff+mlen];

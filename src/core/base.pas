@@ -817,7 +817,7 @@ begin
     begin
       if isStr(VType) and (Length(fun.str(VString)) > 0) then
       begin
-        //result := TryStrToInt(val^, i); //BUG: µØ => true
+        //result := TryStrToInt(val^, i); //BUG: åœ° => true
         for i := 1 to Length(fun.str(VString)) do
         begin
           if not (fun.str(VString)[i] in ['0'..'9']) then exit;

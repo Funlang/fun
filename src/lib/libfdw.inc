@@ -17,7 +17,7 @@
 // LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
-// libfdw FDWriter - FD ╦Яй╫пРап╩╞й╣ож
+// libfdw FDWriter - FD Ф═╪Е╪▐Е╨▐Е┬≈Е▄√Е╝·Г▌╟
 var
   indentStyle: fun.int;
 

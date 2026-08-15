@@ -207,8 +207,8 @@ class Server()
     end fun;
 
     fun OnData()
-      var b = 0.toChar().x(BUFFERSIZE); // todo: ´ó°üÔõÃ´°ì
-      var uc = 0.toChar().x(16); // ¶Ô¶Ë UDP ĞÅÏ¢: ip, port ...
+      var b = 0.toChar().x(BUFFERSIZE); // todo: å¤§åŒ…æ€ä¹ˆåŠ
+      var uc = 0.toChar().x(16); // å¯¹ç«¯ UDP ä¿¡æ¯: ip, port ...
       var ucl = int2str(16);
       var i = SockAPI.recvfrom(handle, b, BUFFERSIZE, 0, uc, ucl);
       b = b.substr(len: i);
@@ -480,7 +480,7 @@ class Server()
         elsif c.len = -1 and c.text =~ /\r?\n\r?\n/ then
           try
             if c.text =~ /^Connection:\sclose$/mi then
-              // c.close = true; // ²»ÒªÖ÷¶¯¹Ø±ÕÁ¬½Ó£¬nginx ¿ÉÄÜÖØÓÃÁ¬½Ó
+              // c.close = true; // ä¸è¦ä¸»åŠ¨å…³é—­è¿æ¥ï¼Œnginx å¯èƒ½é‡ç”¨è¿æ¥
             end if;
             c.len = c.text.match(/(?<=Content-Length:\s)\d++/).@@() div 1; //?. c.len;
           except

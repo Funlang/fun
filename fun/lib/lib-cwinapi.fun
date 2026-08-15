@@ -8,12 +8,12 @@ class CWin32API(dllName, funcProto, init)
   var @params = new [];
   var @retFlag = 'i';
 
-  # ×¢ÊÍ°şÀë
+  # æ³¨é‡Šå‰¥ç¦»
   fun @stripComments(code)
     result = code.replace(%//[^\r\n]*+|/\*.*?\*/%gs, '');
   end fun;
 
-  # ---------- ¹¹Ôì ----------
+  # ---------- æ„é€  ----------
   funcProto = this.@stripComments(funcProto);
   var parsed = this.@_parseProto(funcProto);
   var funcName = parsed.funcName;
@@ -40,7 +40,7 @@ class CWin32API(dllName, funcProto, init)
     end if;
   end loop;
 
-  # ---------- ¾²Ì¬»Øµ÷Éú³É ----------
+  # ---------- é™æ€å›è°ƒç”Ÿæˆ ----------
   fun @callback(decl, func, opts)
     var m = decl.match(/^\s*([\w\s*]+)\s+(\w+)?\s*(?P<a>\((([^()]*|(?P>a))*)\))\s*$/);
     if not m then return 0; end if;
@@ -72,14 +72,14 @@ class CWin32API(dllName, funcProto, init)
     result = func.@toCallback(obj, sig, ptr, thread: thread);
   end fun;
 
-  # ---------- ±ã½İ»ã±à ----------
+  # ---------- ä¾¿æ·æ±‡ç¼– ----------
   fun @asm(asmClass, sig, code, args, callbacks)
     var a = asmClass(sig, code, callbacks);
     result = a.Load().Run(args);
     a.Delete();
   end fun;
 
-  # ---------- µ÷ÓÃ ----------
+  # ---------- è°ƒç”¨ ----------
   var @call = call;
   fun call(ovars, opts)
     result = nil;
@@ -102,7 +102,7 @@ class CWin32API(dllName, funcProto, init)
       elsif p.type = 'struct_ptr' then
         if val and val.@toPtr then argvals.@add(val.@toPtr()); else argvals.@add(0); end if;
       elsif p.type = 'str_ptr' then
-        # ¡ï Ö±½ÓÈ¡×Ö·û´®µØÖ·£¬µ±ÕûÊı´«Èë ¡ï
+        # â˜… ç›´æ¥å–å­—ç¬¦ä¸²åœ°å€ï¼Œå½“æ•´æ•°ä¼ å…¥ â˜…
         argvals.@add(val.toNum(-1));
       elsif p.type = 'cb' then
         val = CWin32API.@callback(p.cbDecl, val, opts);
@@ -114,7 +114,7 @@ class CWin32API(dllName, funcProto, init)
 
     if this.@func != nil then result = this.@func.call(argvals); end if;
 
-    # Ë¢ĞÂÊä³ö²ÎÊı
+    # åˆ·æ–°è¾“å‡ºå‚æ•°
     for p in this.@params loop
       if p.type = 'struct_ptr' then
         var obj = this.args[p.name or p.idx];
@@ -123,7 +123,7 @@ class CWin32API(dllName, funcProto, init)
     end loop;
   end fun;
 
-  # ---------- Ô­ĞÍ½âÎö ----------
+  # ---------- åŸå‹è§£æ ----------
   fun @_parseProto(proto)
     var m = proto.match(/^\s*([\w\s*]+)\s+(\w+)\s*(?P<a>\((([^()]*|(?P>a))*)\))\s*;?\s*$/);
     if not m then return new [ params: new [], retFlag: 'i', funcName: '' ]; end if;
@@ -154,7 +154,7 @@ class CWin32API(dllName, funcProto, init)
           pname = nil;
         end if;
         var ti = CStruct.@typeInfo(ctype, 0);
-        var pflag = ti.type = 'cb' and 'c' or 'i';   // ¡ï ³ı»Øµ÷ÍâÈ«²¿ÓÃ 'i'
+        var pflag = ti.type = 'cb' and 'c' or 'i';   // â˜… é™¤å›è°ƒå¤–å…¨éƒ¨ç”¨ 'i'
         params.@add(new [
           name: pname,
           idx: idx,

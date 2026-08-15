@@ -34,8 +34,8 @@ use 'lib-set.fun';
        [Child_Prop_Alias: This_Prop_Alias]
 #
 class DObject(db, args)
-  var @old$;          // ÊôÐÔÖµ±í - Î´ÐÞ¸Ä
-  var props = new []; // ÊôÐÔÖµ±í
+  var @old$;          // å±žæ€§å€¼è¡¨ - æœªä¿®æ”¹
+  var props = new []; // å±žæ€§å€¼è¡¨
   var isNew = true;
   var ToString = n -> props.@toJson(n);
 

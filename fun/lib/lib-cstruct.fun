@@ -7,7 +7,7 @@ use "lib-math.fun";
 
 var _structSizeMap = new [];
 
-# ========== ÀàĞÍÓ³Éä¹æÔò±í ==========
+# ========== ç±»å‹æ˜ å°„è§„åˆ™è¡¨ ==========
 var _typeRules = [
   [/^(lpstr|lpcstr|pcstr|char\*|const\s*char\*)$/i, 'str_ptr', 4, 'ansi'],
   [/^(lpwstr|lpcwstr|pcwstr|wchar\*|const\s*wchar\*)$/i, 'str_ptr', 4, 'wide'],
@@ -26,7 +26,7 @@ class CStruct(@decl, @init, @customSize)
   var @totalSize = 0;
   var @pinned = new [];
 
-  # ---------- ¾²Ì¬·½·¨ ----------
+  # ---------- é™æ€æ–¹æ³• ----------
   fun @parse(decl)
     decl = CStruct.@stripComments(decl);
     result = CStruct.@_parseStruct(decl);
@@ -47,7 +47,7 @@ class CStruct(@decl, @init, @customSize)
     result = CStruct.@_mapType(ctype, arrlen);
   end fun;
 
-  # ---------- ×Ö¶Î½âÎö ----------
+  # ---------- å­—æ®µè§£æ ----------
   fun @_parseFields(text, delimiter)
     var parts = split(delimiter, text);
     var fields = new [];
@@ -92,7 +92,7 @@ class CStruct(@decl, @init, @customSize)
     result = new [ fields: fields, totalSize: curOff ];
   end fun;
 
-  # ---------- Ë½ÓĞ¹¹Ôì³õÊ¼»¯ ----------
+  # ---------- ç§æœ‰æ„é€ åˆå§‹åŒ– ----------
   this.@_initFromDecl(@decl, @init, @customSize);
 
   fun @_initFromDecl(decl, init, customSize)
@@ -117,7 +117,7 @@ class CStruct(@decl, @init, @customSize)
     end loop;
   end fun;
 
-  # ========== ĞòÁĞ»¯£ºÁ÷Ê½ÀÛ¼ÓĞ´Èë ==========
+  # ========== åºåˆ—åŒ–ï¼šæµå¼ç´¯åŠ å†™å…¥ ==========
   fun @toPtr()
     this.@pinned = new [];
     this.@buf = 0.toChar().x( ceil(this.@totalSize / charSize()) );
@@ -154,7 +154,7 @@ class CStruct(@decl, @init, @customSize)
     result = this.@buf.toNum(-1);
   end fun;
 
-  # ========== ·´ĞòÁĞ»¯£º×Ö·ûÆ«ÒÆÖ±½Ó½âÎö ==========
+  # ========== ååºåˆ—åŒ–ï¼šå­—ç¬¦åç§»ç›´æ¥è§£æ ==========
   fun @toFun()
     if this.@buf = '' then return; end if;
 
@@ -180,7 +180,7 @@ class CStruct(@decl, @init, @customSize)
     end loop;
   end fun;
 
-  # ========== ÄÚ²¿¶ÁĞ´Ô­Óï ==========
+  # ========== å†…éƒ¨è¯»å†™åŸè¯­ ==========
   fun @_readNum(off, size, signed)
     size = size or 4;
     var v = 0;
@@ -208,7 +208,7 @@ class CStruct(@decl, @init, @customSize)
     result = CStruct.@_parseFields(m.@(2), /;/);
   end fun;
 
-  # ========== ÀàĞÍÓ³Éä ==========
+  # ========== ç±»å‹æ˜ å°„ ==========
   fun @_mapType(ctype, arrlen)
     var t = ctype.replace(/\bconst\b/g, '').replace(/^\s+|\s+$/g, '');
     t = t.replace(/\s+/g, ' ');

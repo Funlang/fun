@@ -21,12 +21,12 @@ loop
   var ii = 0;
   for i = 0 to 9 loop
     tk.get();
-    sleep(100); //³¬Ê±Î´ĞÑ, ÏµÍ³Âı
+    sleep(100); //è¶…æ—¶æœªé†’, ç³»ç»Ÿæ…¢
     if tk.get() > 150 and cmds.@count() > 0 then
       ii += 1;
-      if ii > 5 then //·Å¹ıºÚ´°ÇĞ»»
+      if ii > 5 then //æ”¾è¿‡é»‘çª—åˆ‡æ¢
         for k: v in cmds do
-          showWin(k * 1, 2); //×îĞ¡»¯Ö®
+          showWin(k * 1, 2); //æœ€å°åŒ–ä¹‹
         end do;
         exit;
       end if;

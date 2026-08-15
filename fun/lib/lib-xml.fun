@@ -114,7 +114,7 @@ fun mergeXmlValues(values, eval, f, x)
   end if;
   for k: v in values do next when k.length() > 1 and k.substr(0, 1) = '@';
     try
-      v = eval(v); //?. k; ?. v; // ¼ÆËãÕæÊµÖµ
+      v = eval(v); //?. k; ?. v; // è®¡ç®—çœŸå®žå€¼
       var n = x.selectSingleNode(k);
       if n = nil or n.getAttribute(vName) <> v then
         if n <> nil then

@@ -6,15 +6,15 @@ use 'lib-set.fun';
 var adModeRead = 1;
 var adModeShareDenyNone = 16;
 #*
-var adSchemaCatalogs         = 1;  // Êı¾İ¿â
+var adSchemaCatalogs         = 1;  // æ•°æ®åº“
 var adSchemaSchemata         = 17; // Schema
-var adSchemaTables           = 20; // ±í
-var adSchemaColumns          = 4;  // ×Ö¶Î
-var adSchemaPrimaryKeys      = 28; // Ö÷¼ü
-var adSchemaForeignKeys      = 27; // Íâ¼ü
-var adSchemaProviderTypes    = 22; // Êı¾İÀàĞÍ
+var adSchemaTables           = 20; // è¡¨
+var adSchemaColumns          = 4;  // å­—æ®µ
+var adSchemaPrimaryKeys      = 28; // ä¸»é”®
+var adSchemaForeignKeys      = 27; // å¤–é”®
+var adSchemaProviderTypes    = 22; // æ•°æ®ç±»å‹
 #
-var adSchemaDBInfoLiterals   = 31; // ÌØÊâ·ûºÅ
+var adSchemaDBInfoLiterals   = 31; // ç‰¹æ®Šç¬¦å·
 
 class ADO(cnString, args)
   var db = 'ADODB.Connection'.newobj();

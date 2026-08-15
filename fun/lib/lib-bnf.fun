@@ -59,8 +59,8 @@ class CBNF(rls, name, dup, ws)
 
     result = Stack();
     var g = m.@@('*');
-    for i = 0 to m.gcount() - 1 do                   // 已按 匹配  排序
-      var os = str2int(g, i * 8    , packed: 2) - 1; // 无需 start 变量
+    for i = 0 to m.gcount() - 1 do                   // 宸叉寜 鍖归厤  鎺掑簭
+      var os = str2int(g, i * 8    , packed: 2) - 1; // 鏃犻渶 start 鍙橀噺
       var oe = str2int(g, i * 8 + 4, packed: 2) - 1;
       if names.[i] <> nil and os >= 0 then
         var o = new [t: m.@(i), n: names.[i].replace(/_\d++$/, ''), e: oe];

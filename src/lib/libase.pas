@@ -1169,9 +1169,9 @@ begin
   // Parse ...
   // parseAsJSON
   // parseAsFUN, parseAsScript, compile
-  //   ´ø inline ²ÎÊı
-  // parseAsXML, Õâ¸ö¿ÉÒÔ×÷ÎªÕıÔòÓÃ fun À´×ö
-  // parseAsINI, Õâ¸ö¿ÉÒÔ×÷ÎªÕıÔòÓÃ fun À´×ö
+  //   å¸¦ inline å‚æ•°
+  // parseAsXML, è¿™ä¸ªå¯ä»¥ä½œä¸ºæ­£åˆ™ç”¨ fun æ¥åš
+  // parseAsINI, è¿™ä¸ªå¯ä»¥ä½œä¸ºæ­£åˆ™ç”¨ fun æ¥åš
   // ...
   ids['compile'] := CExp.new(nil).parse(fun.uint(@_compile));
   ids['GetJson'] := CExp.new(nil).parse(fun.uint(@_GetJson));

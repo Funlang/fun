@@ -5,10 +5,10 @@ use 'lib-ado.fun';
 use 'lib-set.fun' as set;
 use 'lib-stream.fun';
 
-var adSchemaTables           = 20; // ±í
-var adSchemaColumns          = 4;  // ×Ö¶Î
-var adSchemaPrimaryKeys      = 28; // Ö÷¼ü
-var adSchemaForeignKeys      = 27; // Íâ¼ü
+var adSchemaTables           = 20; // è¡¨
+var adSchemaColumns          = 4;  // å­—æ®µ
+var adSchemaPrimaryKeys      = 28; // ä¸»é”®
+var adSchemaForeignKeys      = 27; // å¤–é”®
 
 var adEmpty = 0x0;
 var adTinyInt = 0x10;

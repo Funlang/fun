@@ -8,7 +8,7 @@ class Stream(fn, sz, cp)
   var first = true;
 
   if sz = nil then
-    sz = 16 * 1024; // 16K ·ÖÅú±£´æĞÔÄÜ×îºÃ (¾­ÑéÖµ, SSD Ó²ÅÌ)
+    sz = 16 * 1024; // 16K åˆ†æ‰¹ä¿å­˜æ€§èƒ½æœ€å¥½ (ç»éªŒå€¼, SSD ç¡¬ç›˜)
   end if;
   var ss  = 0.x(sz);
   var pos = 0;

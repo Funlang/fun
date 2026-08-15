@@ -109,7 +109,7 @@ fun AES(msg, key, isDecode, args)
   if CrAcquire(var hProv, 0, 0, PROV_RSA_AES, 0) then
     var hKey = 0; //key = hex2str('080200000E66000010000000855F356D6BCD47F20408855927E5F610');
     //key = hex2str('080200000E660000') & int2str(16) & key; //'c:\temp\admin\aes--%s.key'.format(1.time()*1).save(key);
-    if CrImKey(hProv, key, key.length(), 0, 0, var hKey) or 1 then // or true then # Ìø¹ý CrImKey
+    if CrImKey(hProv, key, key.length(), 0, 0, var hKey) or 1 then // or true then # è·³è¿‡ CrImKey
       var hHash = 0;
       if hKey <> 0 or CrCreate(hProv, CALG_MD5, 0, 0, var hHash) then
         if hKey <> 0 or CrHash(hHash, key, key.length(), 0) then
