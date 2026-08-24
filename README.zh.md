@@ -9,6 +9,8 @@
 - 作者：张卫东 &lt;zwd@funlang.org>
 - 授权：MIT（另有商业授权条款，见下文「许可证」）
 
+> **版本 9.0**：这不是玩具或原型——一门经历了超过 15 年（2010 至今）持续演化与生产级验证的成熟语言。
+
 ---
 
 ## 目录
@@ -31,6 +33,12 @@
 ---
 
 ## 为什么是 Fun
+
+一句话定位：**Fun 是一门从 JSON 一路写到机器码的脚本语言。**
+
+- 用同一个运行时，覆盖从高层数据处理（JSON/FD）到底层系统编程（FFI、运行时 C、JIT、机器码）的全谱系；
+- 自带 58 个用 Fun 自身编写的标准库模块，全栈能力打包进单个可嵌入的 `fun.dll`；
+- 在信创与 AI Agent 场景中，作为连接国产 OS、数据库、芯片与业务逻辑的轻量级胶水。
 
 Fun 的设计出发点很简单：**数据与代码都应该是头等公民，而且一段脚本应该能在不离开语言的情况下一路触达机器底层。**
 
@@ -202,6 +210,20 @@ FD 是一种 **对人类与 AI 都友好**、且与 JSON 互通的数据格式�
 - 可选的 SSE 压缩；
 - 与 JSON 双向转换（`@toJson`、`getJson`）。
 
+```text
+# FD 格式（类 Markdown：缩进 + 空格分隔）
+person
+  name 张卫东
+  age 46
+  skills
+    - pascal
+    - c
+    - fun
+
+# 等价的 JSON
+{"person": {"name": "张卫东", "age": 46, "skills": ["pascal", "c", "fun"]}}
+```
+
 它的定义性特点是**自描述**：`lib-fd.fun` 中的解析器是由一份用 FD 本身写成的 BNF 文法（`fd.bnf.fd`）生成的。文法文件 `src/parse/bnf/fun.ebnf` 以同样的精神记录了语言文法。
 
 ---
@@ -293,6 +315,8 @@ Fun 核心为 Pascal，源码入口为 `src/prj/fun/funcmd.dpr`。
 ## 标准库
 
 标准库位于 [`fun/lib`](fun/lib)，以纯 Fun 编写（58 个模块）：
+
+> 总代码量约 6,000 行逻辑代码（不含注释），平均每个模块约 100 行——58 个模块全部用 Fun 自身写成。
 
 - **数据**：`lib-json`、`lib-yaml`、`lib-xml`、`lib-base64`、`lib-cstruct`、`lib-md5`、`lib-crypt`
 - **集合 / 算法**：`lib-set`、`lib-tree`、`lib-stack`、`lib-dyns`、`lib-math`

@@ -9,6 +9,8 @@
 - Author: Zhang Weidong &lt;zwd@funlang.org>
 - License: MIT, plus commercial terms (see [License](#license))
 
+> **Version 9.0**: this is not a toy or a prototype — a mature language refined and production-validated for over 15 years (2010–present).
+
 ---
 
 ## Table of contents
@@ -31,6 +33,12 @@
 ---
 
 ## Why Fun
+
+In one sentence: **Fun is a scripting language that goes all the way from JSON to machine code.**
+
+- One runtime spans the whole spectrum, from high-level data work (JSON/FD) down to low-level system programming (FFI, C at runtime, JIT, machine code);
+- 58 standard-library modules written in Fun itself ship together as one embeddable `fun.dll`;
+- in Xinchuang and AI-agent scenarios, it is the lightweight glue between domestic OSes, databases, chips, and business logic.
 
 Fun is designed around a simple premise: **data and code should be equally first-class, and a script should be able to reach down to the machine without leaving the language.**
 
@@ -202,6 +210,20 @@ FD is a data format designed to be **readable by humans and by AI**, and interop
 - optional SSE compression;
 - bidirectional conversion with JSON (`@toJson`, `getJson`).
 
+```text
+# FD format (Markdown-like: indentation + space-separated keys)
+person
+  name Zhang Weidong
+  age 46
+  skills
+    - pascal
+    - c
+    - fun
+
+# equivalent JSON
+{"person": {"name": "Zhang Weidong", "age": 46, "skills": ["pascal", "c", "fun"]}}
+```
+
 Its defining trait is that **FD is self-describing**: the parser in `lib-fd.fun` is generated from a BNF grammar written in FD itself (`fd.bnf.fd`). The grammar file `src/parse/bnf/fun.ebnf` documents the language grammar in the same spirit.
 
 ---
@@ -293,6 +315,8 @@ The full grammar is defined in [`src/parse/bnf/fun.ebnf`](src/parse/bnf/fun.ebnf
 ## Standard library
 
 The standard library in [`fun/lib`](fun/lib) is written in pure Fun (58 modules):
+
+> In total roughly 6,000 lines of logical code (excluding comments), about 100 lines per module — all 58 modules written in Fun itself.
 
 - **Data**: `lib-json`, `lib-yaml`, `lib-xml`, `lib-base64`, `lib-cstruct`, `lib-md5`, `lib-crypt`
 - **Collections / algorithms**: `lib-set`, `lib-tree`, `lib-stack`, `lib-dyns`, `lib-math`
