@@ -21,7 +21,7 @@ var s = `#!asm i:i
 `;
 
 var jit = NewJit(s, names: [test: cb.@toCallback(nil, 'ii:i', true)]);
-?. jit.Run(100000);
+?. jit.Run(100000000);
 jit.Delete();
 ?. 'Ok';
 
@@ -36,6 +36,6 @@ s = `#!C ii:i
 `;
 
 jit = NewJit(s);
-?. jit.call(100000, cb.@toCallback(nil, 'ii:C', true));
+?. jit.call(100000000, cb.@toCallback(nil, 'ii:C', true));
 jit.del();
 ?. 'Ok';

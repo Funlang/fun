@@ -9,7 +9,7 @@
 - Author: Zhang Weidong &lt;zwd@funlang.org>
 - License: MIT, plus commercial terms (see [License](#license))
 
-> **Version 9.0**: this is not a toy or a prototype — a mature language refined and production-validated for over 15 years (2010–present).
+> **Version 9.0**: this is not a toy or a prototype — a mature language refined and production-validated for over 15 years (2010–present), with a lineage that reaches back through Nuva (2006) and TemplateScript (2005).
 
 ---
 
@@ -38,7 +38,7 @@ In one sentence: **Fun is a scripting language that goes all the way from JSON t
 
 - One runtime spans the whole spectrum, from high-level data work (JSON/FD) down to low-level system programming (FFI, C at runtime, JIT, machine code);
 - 58 standard-library modules written in Fun itself ship together as one embeddable `fun.dll`;
-- in Xinchuang and AI-agent scenarios, it is the lightweight glue between domestic OSes, databases, chips, and business logic.
+- in AI-agent and domestic-IT scenarios, it is the lightweight glue connecting OSes, databases, chips, and business logic.
 
 Fun is designed around a simple premise: **data and code should be equally first-class, and a script should be able to reach down to the machine without leaving the language.**
 
