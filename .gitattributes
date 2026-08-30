@@ -20,6 +20,9 @@
 *.bat   text eol=crlf
 *.mak   text eol=crlf
 
+# Vendored third-party code: excluded from GitHub language statistics
+src/3rd/**           linguist-vendored
+
 # Explicitly binary (never touch)
 *.exe   binary
 *.dll   binary
