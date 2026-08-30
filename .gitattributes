@@ -22,6 +22,7 @@
 
 # Vendored third-party code: excluded from GitHub language statistics
 src/3rd/**           linguist-vendored
+src/regex/pcre/**    linguist-vendored
 
 # Explicitly binary (never touch)
 *.exe   binary
