@@ -54,6 +54,9 @@ src/parse/bnf/yacc.lst
 # fun/*.exe
 # fun/*.dll
 
+# Vendored PCRE C source uploaded under src/3rd (build from source; not tracked)
+src/3rd/pcre-8/
+
 # ---- OS ----
 .DS_Store
 Thumbs.db
