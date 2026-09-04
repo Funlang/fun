@@ -9,8 +9,13 @@
 #   ./make-linux-x86_64.sh            # FPC resolved from PATH
 #   FPC=/path/to/fpc ./make-linux-x86_64.sh
 #
-# Extra FPC switches (e.g. -dCalcOpt -dRegexx) can be appended:
+# Extra FPC switches can be appended, e.g.:
 #   ./make-linux-x86_64.sh -dCalcOpt
+#
+# Note: regex is NOT enabled here. make-*.bat pass "-dRegexx" but the source
+# gates regex on {$IfDef Regex} (one word), so "-dRegexx" is a no-op and regex
+# stays compiled out. Enabling -dRegex would need the Windows/MSVCRT-bound PCRE
+# linkage, which is a separate Linux port.
 # ============================================================
 set -e
 cd "$(dirname "$0")"
