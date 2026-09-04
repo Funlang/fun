@@ -238,8 +238,25 @@ begin
 end;
 
 //==============================================================
+// Atomic refcounting uses the fast 32-bit x86 LOCK XADD only where it is
+// valid. The inline asm is 32-bit x86 specific, so it is only used on
+// genuine 32-bit x86 targets. ARM, AArch64 and every 64-bit target fall
+// back to the portable non-atomic path (matching the existing Win64 build,
+// which also runs the interpreter single threaded).
+{$IfDef ARM}
+  {$Define FunNoRefAsm}
+{$EndIf}
+{$IfDef FPC}
+  {$IfDef CPU64}
+    {$Define FunNoRefAsm}
+  {$EndIf}
+{$EndIf}
+{$IfDef Win64}
+  {$Define FunNoRefAsm}
+{$EndIf}
+
 function lockInc(var I: fun.int): fun.int;
-{$IfNDef ARM}
+{$IfNDef FunNoRefAsm}
 asm
       MOV   EDX,1
       XCHG  EAX,EDX
@@ -253,7 +270,7 @@ begin
 end;
 
 function lockDec(var I: fun.int): fun.int;
-{$IfNDef ARM}
+{$IfNDef FunNoRefAsm}
 asm
       MOV   EDX,-1
       XCHG  EAX,EDX
@@ -364,7 +381,10 @@ var
   P: fun.ptr;
 begin
   ReallocMem(List, Value * SizeOf(fun.ptr));
-  P := fun.ptr(fun.int(List) + FSize*SizeOf(fun.ptr));
+  // Address of the first newly-grown element. Use @List^[FSize] (pure
+  // address arithmetic) instead of fun.int(List)+... so the heap pointer is
+  // not truncated on 64-bit targets where fun.int is only 32-bit.
+  P := @List^[FSize];
   FillChar(P^, (Value-FSize)*SizeOf(fun.ptr), 0);
   FSize := Value;
 end;

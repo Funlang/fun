@@ -152,4 +152,7 @@ begin
   end;
 end;
 
+initialization
+  InitCalc();
+
 end.
