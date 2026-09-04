@@ -365,7 +365,7 @@ begin
     begin
       for j := i to ii+1 do
       begin
-        if (j > ii) or (not (s[j] in ['$', '_', '@'..'Z', 'a'..'z', '0'..'9'])) then
+        if (j > ii) or (not (s[j] in ['_', '@'..'Z', 'a'..'z', '0'..'9'])) then
         begin
           v := Copy(s, i, j-i);
           e := exp.UID(v);
