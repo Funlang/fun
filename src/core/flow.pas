@@ -184,13 +184,19 @@ end;
 function CCase.isTrue(env: CEnv; i: fun.int): fun.bool;
 var
   v2: PValue;
+  mv: CValue;
 begin
   v2 := CExp(exps[i]).calcValue(env);
   if asObj(v2) is CSet then
     result := _CompIn(env, exp.value, v2)
   {$IfDef Regex}
   else if asObj(v2) is CRegex then
-    result := _Match(env, exp.value, v2)
+  begin
+    // _Match returns a CMatch object variant; on FPC assigning it directly to
+    // Boolean does not route through CastTo, so coerce via funBoolOf.
+    mv := _Match(env, exp.value, v2);
+    result := funBoolOf(@mv);
+  end
   {$EndIf}
   else
     result := varComp(exp.value, v2, env.isCase) = EQ
