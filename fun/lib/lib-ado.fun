@@ -6,15 +6,15 @@ use 'lib-set.fun';
 var adModeRead = 1;
 var adModeShareDenyNone = 16;
 #*
-var adSchemaCatalogs         = 1;  // 数据库
-var adSchemaSchemata         = 17; // Schema
-var adSchemaTables           = 20; // 表
-var adSchemaColumns          = 4;  // 字段
-var adSchemaPrimaryKeys      = 28; // 主键
-var adSchemaForeignKeys      = 27; // 外键
-var adSchemaProviderTypes    = 22; // 数据类型
+var adSchemaCatalogs         = 1;  // database
+var adSchemaSchemata         = 17; // schema
+var adSchemaTables           = 20; // table
+var adSchemaColumns          = 4;  // columns
+var adSchemaPrimaryKeys      = 28; // primary keys
+var adSchemaForeignKeys      = 27; // foreign keys
+var adSchemaProviderTypes    = 22; // provider types
 #
-var adSchemaDBInfoLiterals   = 31; // 特殊符号
+var adSchemaDBInfoLiterals   = 31; // special symbols
 
 class ADO(cnString, args)
   var db = 'ADODB.Connection'.newobj();
@@ -69,13 +69,42 @@ class ADO(cnString, args)
     result = rs2json(rs);
   end fun;
 
-  fun Execute(sql, rsNext, stream, from, top, tick)
+  // Execute(sql, rsNext, ps, ...): run a statement.
+  //   ps = [] or nil  -> plain Connection.Execute.
+  //   ps = [{v, dt}, ...] in '?' order -> parameterized via ADODB.Command,
+  //       where dt is the ORM internal DataType (0..12). Values are passed raw
+  //       and typed by column so ADO converts them (avoids bigint precision loss).
+  fun Execute(sql, rsNext, stream, from, top, tick, ps)
     if Closed() then
       Open();
     end if;
 
-    var i = 0;
-    var rs = db.Execute(sql, var i); // i - AffectedRecords
+    var i = 0;  // affected records
+    var rs;
+    if ps?.@count?() > 0 then
+      var nq = sql.replace(/[^?]/g, '').length();
+      if nq <> ps.@count() then
+        raise 'Execute: ? count (%s) != params (%s).\nSQL:\n%s'.format(nq, ps.@count(), sql);
+      end if;
+
+      var cmd = 'ADODB.Command'.newobj();
+      cmd.ActiveConnection = db;
+      cmd.CommandType = 1; // adCmdText
+      cmd.CommandText = sql;
+      if this.ps.debugParams <> nil then
+        ?. 'params: ' & ps.@toJson();
+      end if;
+      var pn = 0;
+      for p in ps do
+        pn += 1;
+        var prm = cmd.CreateParameter('p' & pn, this.AdoType(p.dt), 1, this.AdoLen(p.dt, p.v), p.v);
+        cmd.Parameters.Append(prm);
+      end do;
+      rs = cmd.Execute(var i);
+    else
+      rs = db.Execute(sql, var i);
+    end if;
+
     if tick <> nil then
       ?. tick.show('exec sql');
     end if;
@@ -92,13 +121,44 @@ class ADO(cnString, args)
     end if;
   end fun;
 
-  fun ExecuteAndClose(sql, rsNext)
+  // Map ORM internal DataType (0..12) -> ADO DataTypeEnum.
+  // Bind by column type; pass the raw value so ADO converts it
+  // (numbers for numeric columns; bigint as string so ADO turns it into Int64).
+  fun AdoType(dt)
+    case dt div 1 is
+      when 0  do result = 2;    // adSmallInt
+      when 1  do result = 3;    // adInteger
+      when 2  do result = 20;   // adBigInt
+      when 3  do result = 4;    // adSingle
+      when 4  do result = 5;    // adDouble
+      when 5  do result = 131;  // adNumeric (decimal/numeric/currency)
+      when 6  do result = 11;   // adBoolean
+      when 7  do result = 72;   // adGUID
+      when 8  do result = 135;  // adDBTimeStamp
+      when 9  do result = 200;  // adVarChar
+      when 10 do result = 201;  // adLongVarChar
+      when 11 do result = 204;  // adVarBinary
+      when 12 do result = 205;  // adLongVarBinary
+      else result = 12;         // adVariant
+    end case;
+  end fun;
+
+  fun AdoLen(dt, v)
+    var s = '' & v;
+    case dt div 1 is
+      when [7, 9, 10, 11, 12] do result = s.length();
+      else result = 0;
+    end case;
+    if result <= 0 then result = 1; end if;
+  end fun;
+
+  fun ExecuteAndClose(sql, rsNext, ps)
     try
       if sql =~ /^-?\d++$/ then
         result = OpenSchema(sql div 1);
       else
         try
-          result = Execute(sql, rsNext);
+          result = Execute(sql, rsNext, ps: ps);
         except
           raise '$@ at $@@()'.eval();
         end try;

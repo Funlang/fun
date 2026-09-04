@@ -34,9 +34,10 @@ use 'lib-set.fun';
        [Child_Prop_Alias: This_Prop_Alias]
 #
 class DObject(db, args)
-  var @old$;          // 属性值表 - 未修改
-  var props = new []; // 属性值表
+  var @old$;          // original property values, unchanged
+  var props = new []; // property values
   var isNew = true;
+  var bindv = new []; // param collector: [{v, dt}] in '?' build order
   var ToString = n -> props.@toJson(n);
 
   fun SaveOld()
@@ -78,6 +79,7 @@ class DObject(db, args)
   //===============================================================================================
   fun Save()
     this.CheckWritable?();
+    this.BindReset();
     if isNew then
       var vs = '';
       var fs = Fields(props, true, var vs);
@@ -89,7 +91,7 @@ class DObject(db, args)
         rsNext = true;
       end if;
       PrintSQL(sql);
-      result = db.Execute(sql, rsNext); // get AutoId ?
+      result = this.Exec(sql, rsNext); // get AutoId ?
       if rsNext and result then
         try
           props[autoId.Alias] = '' & result[0].autoId; // convert to string
@@ -104,13 +106,14 @@ class DObject(db, args)
 
   var GetByKey(kvs) = Get(kvs, true);
   fun Get(kvs, isPKey, set_quantifier, order) // DISTINCT, TOP ...
+    this.BindReset();
     var sql = this.BuildSqlPrefix?();
     sql &= 'SELECT %s%s%s%s\n'.escape().format(set_quantifier, Fields(args.@Fields).substr(2), this.GetFromClause(), Where(kvs, isPKey));
     if order then
       sql &= 'ORDER BY %s\n'.escape().format(Fields(order, isOrder: true).substr(2));
     end if;
     PrintSQL(sql);
-    var rs = db.Execute(sql); // DObject and DObjectSet
+    var rs = this.Exec(sql); // DObject and DObjectSet
     if isPKey then
       if rs.@count() <> 1 then
         raise 'Expected 1 record but %s record(s) found.'.format(rs.@count());
@@ -147,15 +150,16 @@ class DObject(db, args)
 
   fun Update(kvs, isPKey)
     this.CheckWritable?();
+    this.BindReset();
     var ss = '';
     var old = @old$ or [];
     for k: v in props do
       var f = args.@Fields[k]; next when not f or ('' & v = '' & old[k]) or kvs = nil and f.IsPrimary; // Equal ! Ignore Keys !
-      ss &= ',\n\t%s = %s'.escape().format(DQ(f.Name), SQ(v, f.DataType));
+      ss &= ',\n\t%s = %s'.escape().format(DQ(f.Name), this.Bind(v, f.DataType));
     end do;
     var sql = 'UPDATE %s\nSET\n%s%s\n'.escape().format(DQ(args.Name, true), ss.substr(2), Where(kvs, isPKey));
     PrintSQL(sql);
-    result = db.Execute(sql);
+    result = this.Exec(sql);
     if kvs = nil then
       SaveOld();
     end if;
@@ -163,9 +167,10 @@ class DObject(db, args)
 
   fun Delete(kvs, isPKey)
     this.CheckWritable?();
+    this.BindReset();
     var sql = 'DELETE FROM %s%s\n'.escape().format(DQ(args.Name, true), Where(kvs, isPKey));
     PrintSQL(sql);
-    result = db.Execute(sql); // todo: Remove from owner list ?
+    result = this.Exec(sql); // todo: Remove from owner list ?
   end fun;
 
   fun Where(kvs, isPKey)
@@ -211,26 +216,29 @@ class DObject(db, args)
           var f = pf; next when not f;
           var OT = m.@(2).upper();
           OT = m.@(1) and m.@(1).upper().replace(/\s*+$/, ' ') & OT or OT;
-          if v <> nil and v.@count() > 0 and v.$query <> nil then
+          if v <> nil and v.$query <> nil then
             var subSql = this.BuildSubSelect(v.$query);
             exp = '%s %s%s (%s)'.format(DQ(f.Name), OT, '', subSql);
+          elsif v?.@count?() <> nil and v.@count() > 0 then
+            exp = '%s %s (%s)'.format(DQ(f.Name), OT, this.BindAll(v, f.DataType));
           else
-            exp = '%s %s %s'.format(DQ(f.Name), OT, SQ(v, f.DataType, true));
+            exp = '%s %s (%s)'.format(DQ(f.Name), OT, this.Bind(v, f.DataType));
           end if;
         else
-          var f = args.@Fields[k]; next when not f;
-          if v?.@count?() = 1 then
-            exp = this.Condition(v, k, level, f).replace(/^\s*+\n/s, '').replace(/(?<=\n)/gs, '\t'.escape().x(level+1));
-          else
-            var re = /^([<!=>]++|(NOT\s++)?(LIKE|BETWEEN|IN))\s*+/i; // todo: Like ... Escape ..
-            var EQ = '=';
-            if 'NULL' = v or 'NOT NULL' = v then
-              EQ = 'IS';
-            elsif v =~ re then
-              EQ = v.match(re).@(1).upper();
-              v = v.replace(re, '');
+          var f = args.@Fields[k];
+          if f = nil then
+            raise 'Unknown field "$k" in condition.'.eval();
+          end if;
+          if v?.@count?() <> nil then
+            if v.op <> nil then
+              exp = this.SimpleCond(f, v);          // format B: {op, value}
+            elsif v.@count() = 1 then
+              exp = this.Condition(v, k, level, f).replace(/^\s*+\n/s, '').replace(/(?<=\n)/gs, '\t'.escape().x(level+1));
+            else
+              exp = this.SimpleCond(f, v);
             end if;
-            exp = '%s %s %s'.format(DQ(f.Name), EQ, SQ(v, f.DataType, EQ =~ /IS|BETWEEN|IN/));
+          else
+            exp = this.SimpleCond(f, v);            // scalar (format A value string / plain equality)
           end if;
         end if;
         result &= ' %s\n%s%s'.format(AND, '\t'.x(level + 1), exp).escape();
@@ -245,13 +253,128 @@ class DObject(db, args)
     end if;
   end fun;
 
+  // Operator whitelist: format B ({op,value}) or legacy format A (operator inside the value string)
+  fun SimpleCond(f, v)
+    var name = DQ(f.Name);
+    var dt = f.DataType;
+    var EQ = '=';
+    var vals = new [];
+    if v?.@count?() <> nil and v.op <> nil then
+      EQ = this.OpCanon(v.op);
+      if EQ in ['BETWEEN', 'NOT BETWEEN'] then
+        if v.value?.@count?() < 2 then
+          raise 'BETWEEN/NOT BETWEEN requires 2 operands.'.eval();
+        end if;
+        vals.@add(v.value[0]);
+        vals.@add(v.value[1]);
+      elsif EQ in ['IN', 'NOT IN'] then
+        for x in v.value do vals.@add(x); end do;
+      elsif EQ in ['IS NULL', 'IS NOT NULL'] then
+        // no params
+      else
+        vals.@add(v.value);
+      end if;
+    else
+      var s = '' & v;
+      var up = s.upper();
+      if up = 'NULL' then
+        EQ = 'IS NULL';
+      elsif up = 'NOT NULL' then
+        EQ = 'IS NOT NULL';
+      else
+        var re = /^([<!=>]++|(NOT\s*+)?(LIKE|BETWEEN|IN))\s*+/i;
+        if s =~ re then
+          EQ = this.OpCanon(s.match(re).@(1));
+          vals = this.LegacyVals(EQ, s.replace(re, ''));
+        else
+          vals.@add(s);
+        end if;
+      end if;
+    end if;
+
+    if EQ in ['IN', 'NOT IN'] and vals.@count() = 0 then
+      raise 'IN/NOT IN requires at least 1 value.'.eval();
+    end if;
+
+    if EQ = 'IS NULL' then
+      result = '%s IS NULL'.format(name);
+    elsif EQ = 'IS NOT NULL' then
+      result = '%s IS NOT NULL'.format(name);
+    elsif EQ in ['BETWEEN', 'NOT BETWEEN'] then
+      result = '%s %s %s AND %s'.format(name, EQ, this.Bind(vals[0], dt), this.Bind(vals[1], dt));
+    elsif EQ in ['IN', 'NOT IN'] then
+      result = '%s %s (%s)'.format(name, EQ, this.BindAll(vals, dt));
+    else
+      result = '%s %s %s'.format(name, EQ, this.Bind(vals[0], dt));
+    end if;
+  end fun;
+
+  // Operator normalization + whitelist
+  fun OpCanon(o)
+    var op = ('' & o).upper();
+    if op = '!=' then
+      op = '<>';
+    end if;
+    var ok = ['=', '<>', '>', '>=', '<', '<=', 'LIKE', 'NOT LIKE', 'BETWEEN', 'NOT BETWEEN', 'IN', 'NOT IN', 'IS NULL', 'IS NOT NULL'];
+    if not (op in ok) then
+      raise 'Unknown operator "$op".'.eval();
+    end if;
+    result = op;
+  end fun;
+
+  // Format A: split the text after the operator into scalar operands
+  fun LegacyVals(EQ, rest)
+    var s = '' & rest;
+    if EQ in ['BETWEEN', 'NOT BETWEEN'] then
+      result = this.SplitOn(/\s*+\bAND\b\s*+/i, s);
+      if result.@count() < 2 then
+        raise 'BETWEEN/NOT BETWEEN needs "a AND b".'.eval();
+      end if;
+    elsif EQ in ['IN', 'NOT IN'] then
+      s = s.replace(/^\s*+\(/, '').replace(/\)\s*+$/, '');
+      result = this.SplitOn(/,/ , s);
+    else
+      result = new [];
+      result.@add(this.Tok(s));
+    end if;
+  end fun;
+
+  // Split a string by a separator regex into unquoted scalars
+  fun SplitOn(re, s)
+    result = new [];
+    var m = re.match('' & s);
+    while m.@@() <> nil loop
+      var t = m.missed();
+      if this.Trm(t) <> '' then
+        result.@add(this.Tok(t));
+      end if;
+      m.match();
+    end loop;
+    var t = m.missed();
+    if this.Trm(t) <> '' then
+      result.@add(this.Tok(t));
+    end if;
+  end fun;
+
+  // Strip leading/trailing whitespace (no trim builtin in Fun; use regex)
+  fun Trm(s)
+    result = ('' & s).replace(/^\s+|\s+$/g, '');
+  end fun;
+
+  // Strip surrounding whitespace and one wrapping quote pair from an operand
+  fun Tok(s)
+    var t = this.Trm(s);
+    t = t.replace(/^['"]/, '').replace(/['"]$/, '');
+    result = t;
+  end fun;
+
   fun Fields(kvs, isInsert, vs, isOrder, isCreate)
     result = '';
     for k: v in kvs do
       var f = args.@Fields[k]; next when not f or isInsert and f.IsAutoId;
       result &= ', ' & DQ(f.Name);
       if isInsert then
-        vs &= ', ' & SQ(v, f.DataType);
+        vs &= ', ' & this.Bind(v, f.DataType);
       elsif isOrder and v < 0 then
         result &= ' DESC';
       elsif isCreate then
@@ -265,9 +388,10 @@ class DObject(db, args)
 
   fun Create(dataTypes)
     dataTypes = dataTypes or ['SMALLINT', 'INT', 'INT', 'FLOAT', 'DOUBLE PRECISION', 'NUMERIC', 'SMALLINT', 'CHAR', 'DATE', 'CHAR', 'VARCHAR', 'BIT', 'BIT'];
+    this.BindReset();
     var sql = 'CREATE TABLE %s (\n\t%s\n)\n'.format(DQ(args.Name, true), Fields(args.@Fields, isCreate: dataTypes).substr(2).replace(/,\x20/g, ',\n\t')).escape();
     PrintSQL(sql);
-    result = db.Execute(sql);
+    result = this.Exec(sql);
   end fun;
 
   //===============================================================================================
@@ -281,25 +405,48 @@ class DObject(db, args)
     result &= db.quotes.format(s);
   end fun;
 
-  fun SQ(v, dt, dontSQ)
-    if dontSQ or dt <= 6 then // todo: SQL Injection
-      if v =~ %\b(Or|Union|Go|Into)\b|;|--|/\*|\n%i then
-        raise 'SQL Injection!!!';
-      elsif v.replace(/[^']++/g, '').length() mod 2 = 0 then
-        result = v;
-      else
-        result = v.replace(/'/g, "''");
+  // Statement param collector: values only go to bound params, never into SQL text
+  fun BindReset()
+    this.bindv = new [];
+  end fun;
+
+  // Return '?' and push {value, internal DataType} onto bindv in order
+  fun Bind(v, dt)
+    this.bindv.@add(new [v: v, dt: dt]);
+    result = '?';
+  end fun;
+
+  // Bind a list of values; return a ','-joined '?' sequence (for IN (…))
+  fun BindAll(vs, dt)
+    var s = '';
+    for x in vs do
+      if s <> '' then
+        s &= ', ';
       end if;
-    else
-      result = "'%s'".format(v.replace(/^'(.*?)'$/, '$1').replace(/'/g, "''"));
-    end if;
+      s &= this.Bind(x, dt);
+    end do;
+    result = s;
+  end fun;
+
+  // Finalize: hand the collected params to db.Execute(sql, rsNext, ps: params)
+  fun Exec(sql, rsNext)
+    var params = this.bindv;
+    this.BindReset();
+    result = db.Execute(sql, rsNext, ps: params);
   end fun;
 
   fun PrintSQL(s)
+    var out = s;
+    if this.bindv.@count() > 0 then
+      try
+        out = s & '\n-- params: '.escape() & this.bindv.@toJson();
+      except
+      end try;
+    end if;
     if db.PrintSQL <> nil then
-      db.PrintSQL(s);
+      db.PrintSQL(out);
     elsif not db.dontPrintSQL then
-      ?. s;
+      ?. out;
     end if;
   end fun;
 

@@ -60,3 +60,6 @@ desktop.ini
 
 # ---- Local article drafts (own git repo, backed up to /data/git/funlang/fun-art) ----
 art/
+
+# Local scratch tests (not tracked)
+fun/test/

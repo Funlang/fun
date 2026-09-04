@@ -20,7 +20,13 @@ class CteObject = DObject()
     if q = nil then raise 'BuildQuerySQL: query definition is nil'; end if;
     var sql = 'SELECT ';
     if q.distinct then sql &= 'DISTINCT '; end if;
-    if q.limit then sql &= 'TOP ' & q.limit & ' '; end if;
+    if q.limit then
+      var lmt = q.limit;
+      if ('' & lmt) !~ /^-?\d++$/ then
+        raise 'BuildQuerySQL: invalid limit value'.eval();
+      end if;
+      sql &= 'TOP ' & lmt & ' ';
+    end if;
     sql &= q.select and BuildColumns(q.select, 1) or '*';
 
     var fromStr = '';
@@ -28,10 +34,18 @@ class CteObject = DObject()
       if db.schema[q.from] <> nil then
         fromStr = DQ(db.schema[q.from].Name, true) & ' AS ' & q.from;
       else
-        fromStr = q.from;
+        var tf = '' & q.from;
+        if tf !~ /^[A-Za-z_][A-Za-z0-9_]*+$/ then
+          raise 'BuildQuerySQL: invalid from identifier'.eval();
+        end if;
+        fromStr = tf;
       end if;
     elsif q.from.$cte then
-      fromStr = q.from.$cte;
+      var tc = '' & q.from.$cte;
+      if tc !~ /^[A-Za-z_][A-Za-z0-9_]*+$/ then
+        raise 'BuildQuerySQL: invalid cte identifier'.eval();
+      end if;
+      fromStr = tc;
     else
       raise 'BuildQuerySQL: unsupported from type';
     end if;
