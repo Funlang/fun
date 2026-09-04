@@ -308,6 +308,7 @@ procedure _format(env: CEnv; exp: CExp; exps: CExps; val: PValue);
 var
   ii, i: fun.int;
   vs: array of TVarRec;
+  strs: array of fun.str;
 begin
   with PData(exp.value)^ do
   case VType of
@@ -319,14 +320,22 @@ begin
     begin
       ii := CExps.Count(exps);
       SetLength(vs, ii);
+      {$IfDef FPC}
+      // Keep the argument strings alive (and refcounted) while Format runs.
+      // Storing fun.ptr(asStr) of an inline temporary leaves a dangling
+      // pointer because the temporary is released immediately.
+      SetLength(strs, ii);
+      {$EndIf}
       for i := 0 to ii -1 do
       begin
       {$IfDef FPC}
         {$IfDef Unicode}
-        vs[i].VWideString := fun.ptr(CExp(exps.Item[i]).asStr);
+        strs[i]       := CExp(exps.Item[i]).asStr;
+        vs[i].VWideString := fun.ptr(strs[i]);
         vs[i].VType       := vtWideString;
         {$Else}
-        vs[i].VAnsiString := fun.ptr(CExp(exps.Item[i]).asStr);
+        strs[i]       := CExp(exps.Item[i]).asStr;
+        vs[i].VAnsiString := fun.ptr(strs[i]);
         vs[i].VType       := vtAnsiString;
         {$EndIf}
       {$Else}
