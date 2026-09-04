@@ -364,6 +364,13 @@ type
 // for OLE lib - PropertyGet or Set
 var _ENV: CEnv;
 
+// Object-aware boolean coercion of a value. Unlike base.funBool (which relies
+// on the implicit Variant->Boolean cast routed through the custom
+// CVarObject.CastTo used on Delphi), this tests Fun collection/match objects
+// (CExp subclasses) via their count, so it also works on FPC where that cast
+// is not routed through CastTo.
+function funBoolOf(const v: PValue): fun.bool;
+
 implementation
 
 uses SysUtils,
@@ -886,9 +893,27 @@ begin
   p_val := @v_val;
 end;
 
+function funBoolOf(const v: PValue): fun.bool;
+var
+  o: CBase;
+begin
+  o := base.asObj(v);
+  if o = nil then
+    result := funBool(v)
+  else if o is CExp then
+    // CSet / CMatch (and other countable collection values) are truthy only
+    // when non-empty.
+    result := CExp(o).count > 0
+  else if o is CFun then
+    result := true
+  else
+    result := true
+  ;
+end;
+
 function CExp.asBool: fun.bool;
 begin
-  result := funBool(value);
+  result := funBoolOf(value);
 end;
 
 function CExp.asInt: fun.int;

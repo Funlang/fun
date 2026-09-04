@@ -129,7 +129,7 @@ begin
   v      := PData(exp.calcValue(env))^;
   // Value Assign
   p_val^ := CValue(v);
-  if funBool(p_val) then
+  if funBoolOf(p_val) then
   begin
     p      := exp2.calcValue(env);
     p_val^ := p^;
@@ -145,7 +145,7 @@ begin
   v      := PData(exp.calcValue(env))^;
   // Value Assign
   p_val^ := CValue(v);
-  if not funBool(p_val) then
+  if not funBoolOf(p_val) then
   begin
     p      := exp2.calcValue(env);
     p_val^ := p^;
