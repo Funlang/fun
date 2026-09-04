@@ -537,6 +537,7 @@ uses
 
 {$IFDEF PCRE_STATICLINK}
 
+{$IfNDef Linux}
 // make the linker happy with PCRE 8.00
 procedure _pcre_find_bracket; external;
 
@@ -559,6 +560,7 @@ procedure _pcre_find_bracket; external;
 {$LINK pcre_version.obj}
 {$LINK pcre_xclass.obj}
 {$LINK pcre_default_tables.obj}
+{$EndIf Linux}
 
 // for ! SUPPORT_UTF8
 function _pcre_ord2utf8(cvalue: Integer; buffer: Pointer): Integer;
@@ -594,10 +596,12 @@ function pcre_refcount; external;
 function pcre_study; external;
 function pcre_version; external;
 
+{$IfNDef Linux}
 procedure __llmul;
 asm
   JMP System.__llmul
 end;
+{$EndIf Linux}
 
 type
   size_t = Longint;
@@ -616,6 +620,7 @@ function _strncmp(s1: PAnsiChar; s2: PAnsiChar; n: size_t): Integer; cdecl; exte
 function _strlen(s: PAnsiChar): size_t; cdecl; external szMSVCRT name 'strlen';
 function _isdigit(__ch: Integer): Integer; cdecl; external szMSVCRT name 'isdigit';
 }
+{$IfNDef Linux}
 {$I 'pcrd_c.inc'}
 
 function __ltolower(__ch: Integer): Integer; cdecl; external szMSVCRT name 'tolower';
@@ -631,6 +636,15 @@ function _isspace(__ch: Integer): Integer; cdecl; external szMSVCRT name 'isspac
 function _isupper(__ch: Integer): Integer; cdecl; external szMSVCRT name 'isupper';
 function _isxdigit(__ch: Integer): Integer; cdecl; external szMSVCRT name 'isxdigit';
 function _strchr(__s: PAnsiChar; __c: Integer): PAnsiChar; cdecl; external szMSVCRT name 'strchr';
+{$Else}
+// Linux: the PCRE engine is linked from libpcre.a (built from the pcre-8 C
+// sources); its C-runtime calls (memcpy, memcmp, isspace, ...) are provided by
+// glibc (-lc). pcre_malloc/pcre_free below call glibc's malloc/free so the
+// allocator used by the Pascal wrappers matches the one used inside libpcre.
+{$LINKLIB pcre}
+function malloc(Size: NativeUInt): Pointer; cdecl; external 'c';
+procedure free(P: Pointer); cdecl; external 'c';
+{$EndIf}
 
 function pcre_malloc(Size: SizeInt): Pointer;
 begin
@@ -1086,4 +1100,3 @@ function pcre_version; external libpcremodulename name PCREVersionExportName;
 {$ENDIF PCRE_LINKDLL}
 
 end.
-
