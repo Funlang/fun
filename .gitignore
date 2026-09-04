@@ -20,6 +20,7 @@
 *.exe
 *.dll
 *.dylib
+*.or
 
 # The DLL license document is source text, not a binary - keep it tracked.
 !LICENSE.dll
