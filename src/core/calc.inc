@@ -62,8 +62,11 @@ begin
 end;
 
 function _MatchNot(env: CEnv; e1, e2: PValue): fun.bool;
+var
+  mv: CValue;
 begin
-  result := not fun.bool(_Match(env, e1, e2));
+  mv := _Match(env, e1, e2);
+  result := not funBoolOf(@mv);
 end;
 
 //==============================================================
@@ -501,22 +504,22 @@ end;
 
 procedure C24(env: CEnv; e1, e2: PValue);
 begin
-  e1^ := not funBool(e1); // n
+  e1^ := not funBoolOf(e1); // n
 end;
 
 procedure C25(env: CEnv; e1, e2: PValue);
 begin
-  e1^ := funBool(e1) and funBool(e2); // a
+  e1^ := funBoolOf(e1) and funBoolOf(e2); // a
 end;
 
 procedure C26(env: CEnv; e1, e2: PValue);
 begin
-  e1^ := funBool(e1) or  funBool(e2); // o
+  e1^ := funBoolOf(e1) or  funBoolOf(e2); // o
 end;
 
 procedure C27(env: CEnv; e1, e2: PValue);
 begin
-  e1^ := funBool(e1) xor funBool(e2); // x
+  e1^ := funBoolOf(e1) xor funBoolOf(e2); // x
 end;
 
 //==============================================================
