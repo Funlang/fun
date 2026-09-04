@@ -936,9 +936,13 @@ begin
 
   // Object
   {$IfDef FPC}
-  else if (a.VType = VarObject) then
+  // FPC does not implement CompareOp for the custom object variant types, so
+  // handle every Fun object variant (VarObject AND VarObjNew, e.g. objects
+  // built with 'new') here by identity instead of falling through to the
+  // generic variant compare (which would raise EVariantError).
+  else if (a.VType = VarObject) or (a.VType = VarObjNew) then
     result := ECbool[(a.VType = b.VType) and (a.VPointer = b.VPointer)]
-  else if (b.VType = VarObject) then
+  else if (b.VType = VarObject) or (b.VType = VarObjNew) then
     result := NE
   {$Else}
   else if (a.VType >= VarObject) then
