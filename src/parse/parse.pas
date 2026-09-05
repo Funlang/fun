@@ -962,10 +962,19 @@ begin
       begin
         path := ExtractFilePath(ParamStr(0));
         {$IfDef Debug}
+        {$IfNDef Linux}
         path := path + '..\..\..\fun\';
+        {$Else}
+        path := path + '../../../fun/';
         {$EndIf}
+        {$EndIf}
+        {$IfNDef Linux}
         ret  := path + 'lib\' + fn;
         if not FileExists(ret) then ret := path + 'app\' + fn;
+        {$Else}
+        ret  := path + 'lib/' + fname;
+        if not FileExists(ret) then ret := path + 'app/' + fname;
+        {$EndIf}
         if     FileExists(ret) then result := ret;
       end;
     end;
