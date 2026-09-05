@@ -71,6 +71,7 @@ implementation
 uses libase, libset
      {$IfDef WinCOM}, winole{$EndIf}
      {$IfDef WinAPI}, winapi{$EndIf}
+     {$IfDef LinuxFFI}, lffi  {$EndIf}
      {$IfDef Regex} , regex {$EndIf}
      {$IfDef FunUI} , ui    {$EndIf}
      ;
@@ -150,6 +151,11 @@ begin
   libs.add(CLapi.Create());
   {$EndIf}
   
+  // linux ffi
+  {$IfDef LinuxFFI}
+  libs.add(CLffiApi.Create());
+  {$EndIf}
+
   // ui lib
   {$IfDef FunUI}
   libs.add(uilib);

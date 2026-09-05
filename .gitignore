@@ -37,6 +37,7 @@
 
 # Native Linux console build of funcmd.dpr (no extension, unlike the .exe)
 src/prj/fun/funcmd
+src/prj/fun/.ffi/
 
 # Generated Yacc/Lex output (keep the .y / .l / .ebnf sources)
 src/parse/dyl/yyparse.cod

@@ -39,6 +39,7 @@ uses SysUtils, Variants, {$IfNDef Linux}Windows,{$Else}Linux, unixtype,{$EndIf}
      io, parse
      {$IfDef WinCOM}  , winole  {$EndIf}
      {$IfDef WinAPI}  , winapi  {$EndIf}
+     {$IfDef LinuxFFI}, lffi    {$EndIf}
      {$IfDef Regex}   , regex   {$EndIf}
      ;
 type PValue = base.PValue;
@@ -1153,6 +1154,11 @@ begin
   ids['GetApi']  := CExp.new(nil).parse(fun.uint(@_getapi));
   {$EndIf}
   
+  // Linux: dlopen/dlsym via libffi (winapi unit stays Windows-only)
+  {$IfDef LinuxFFI}
+  ids['GetApi']  := CExp.new(nil).parse(fun.uint(@_lgetapi));
+  {$EndIf}
+
   // Win COM
   {$IfDef WinCOM}
   // c.newobj(get = false)

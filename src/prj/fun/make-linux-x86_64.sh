@@ -67,7 +67,30 @@ else
     echo "PCRE C source not found - building WITHOUT regex." >&2
 fi
 
+# --- Optional FFI: Fun getapi() on Linux via FPC's bundled libffi unit ---
+FFI_FLAGS=""
+FFI_PPU="$(find "$(dirname "$FPC_BINDIR")/lib" -type d -name libffi 2>/dev/null | head -n 1)"
+if [ -n "$FFI_PPU" ] && [ -f "$FFI_PPU/ffi.ppu" ]; then
+    FFI_LIBDIR="$HERE/.ffi"
+    if ! ldconfig -p 2>/dev/null | grep -q 'libffi\.so '; then
+        # no libffi.so (dev symlink); point -lffi at the runtime .so.N
+        real="$(ldconfig -p 2>/dev/null | awk '/libffi\.so/{print $NF; exit}')"
+        if [ -n "$real" ]; then
+            mkdir -p "$FFI_LIBDIR"
+            ln -sf "$real" "$FFI_LIBDIR/libffi.so"
+            FFI_FLAGS="-dLinuxFFI -Fu$FFI_PPU -Fu$HERE/../../lib -Fl$FFI_LIBDIR"
+        else
+            echo "libffi runtime not found - building WITHOUT FFI (getapi disabled)." >&2
+        fi
+    else
+        FFI_FLAGS="-dLinuxFFI -Fu$FFI_PPU -Fu$HERE/../../lib"
+    fi
+    [ -n "$FFI_FLAGS" ] && echo "FFI enabled (getapi via libffi)."
+else
+    echo "FPC libffi binding not found - building WITHOUT FFI (getapi disabled on Linux)." >&2
+fi
+
 # --- Build funcmd ------------------------------------------------
 echo "Building funcmd with $FPC_BIN"
 # shellcheck disable=SC2086
-"$FPC_BIN" funcmd.dpr -B -Sd -O2 -Xs -Tlinux -dLinux $PCRE_FLAGS "$@"
+"$FPC_BIN" funcmd.dpr -B -Sd -O2 -Xs -Tlinux -dLinux $PCRE_FLAGS $FFI_FLAGS "$@"
