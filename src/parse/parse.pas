@@ -773,7 +773,7 @@ end;
 function CParser.CreateTime(const a1: YYSType): YYSType;
 begin
   DoLog(a1, result);
-  result.node := CExp.new(Curr).parse(VarToDateTime(Copy(a1.text, 3, Length(a1.text)-3)));
+  result.node := CExp.new(Curr).parse(ToFunTime(Copy(a1.text, 3, Length(a1.text)-3)));
 end;
 
 function CParser.CreateValue(const a1, a0, id, exp: YYSType; str: fun.bool = false): YYSType;

@@ -179,6 +179,7 @@ procedure del(obj: CBase);
 
 function calcIndex(i, N: fun.int): fun.int;
 Function NewStringReplace(const S, OldPattern, NewPattern: string;  Flags: TReplaceFlags): string;
+function ToFunTime(const s: fun.str): fun.time;
 
 implementation
 
@@ -186,6 +187,47 @@ implementation
 
 uses Variants;
 
+function ToFunTime(const s: fun.str): fun.time;
+var
+  i, n: fun.int;
+  yy, mm, dd, hh, nn, ss: fun.int;
+  t: fun.time;
+begin
+{$IfNDef Linux}
+  result := VarToDateTime(s);
+{$Else}
+  yy := 0; mm := 0; dd := 0;
+  hh := 0; nn := 0; ss := 0;
+  i := 1; n := Length(s);
+  // date: yyyy-mm-dd  (digits then '-'-separated groups)
+  while (i <= n) and (s[i] >= '0') and (s[i] <= '9') do
+  begin yy := yy * 10 + (Ord(s[i]) - 48); inc(i); end;
+  if (i <= n) and (s[i] = '-') then inc(i);
+  while (i <= n) and (s[i] >= '0') and (s[i] <= '9') do
+  begin mm := mm * 10 + (Ord(s[i]) - 48); inc(i); end;
+  if (i <= n) and (s[i] = '-') then inc(i);
+  while (i <= n) and (s[i] >= '0') and (s[i] <= '9') do
+  begin dd := dd * 10 + (Ord(s[i]) - 48); inc(i); end;
+  // time: hh:nn:ss  (optional, preceded by a space)
+  if (i <= n) and (s[i] = ' ') then inc(i);
+  while (i <= n) and (s[i] >= '0') and (s[i] <= '9') do
+  begin hh := hh * 10 + (Ord(s[i]) - 48); inc(i); end;
+  if (i <= n) and (s[i] = ':') then inc(i);
+  while (i <= n) and (s[i] >= '0') and (s[i] <= '9') do
+  begin nn := nn * 10 + (Ord(s[i]) - 48); inc(i); end;
+  if (i <= n) and (s[i] = ':') then inc(i);
+  while (i <= n) and (s[i] >= '0') and (s[i] <= '9') do
+  begin ss := ss * 10 + (Ord(s[i]) - 48); inc(i); end;
+  if (mm = 0) then mm := 1;
+  if (dd = 0) then dd := 1;
+  if (yy >= 1) and (yy <= 9999) and (mm >= 1) and (mm <= 12)
+     and (dd >= 1) and (dd <= 31) and (hh <= 23) and (nn <= 59) and (ss <= 59) then
+    t := EncodeDate(word(yy), word(mm), word(dd)) + EncodeTime(word(hh), word(nn), word(ss), 0)
+  else
+    t := VarToDateTime(s);  // fall through: let it raise if it must
+  result := t;
+{$EndIf}
+end;
 procedure add(obj: CBase);
 begin
   if obj <> nil then obj._AddRef;

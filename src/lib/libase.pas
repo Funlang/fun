@@ -696,7 +696,7 @@ end;
 procedure _toTime(env: CEnv; exp: CExp; exps: CExps; val: PValue);
 begin
   // todo
-  val^ := VarToDateTime(exp.asStr);
+  val^ := ToFunTime(exp.asStr);
 end;
 
 // s.toByte(pos = 0)
