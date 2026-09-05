@@ -35,7 +35,7 @@ implementation
 
 {$IfDef Unicode}{$WARN WIDECHAR_REDUCED OFF}{$EndIf}
 
-uses SysUtils, Variants, {$IfNDef Linux}Windows,{$Else}{$EndIf}
+uses SysUtils, Variants, {$IfNDef Linux}Windows,{$Else}Linux, unixtype,{$EndIf}
      io, parse
      {$IfDef WinCOM}  , winole  {$EndIf}
      {$IfDef WinAPI}  , winapi  {$EndIf}
@@ -413,6 +413,9 @@ var
   e: CExp;
   t: fun.time;
   i64: fun.int64;
+  {$IfDef Linux}
+  ts: timespec;
+  {$EndIf}
 begin
   if isNum(exp.value) then
   begin
@@ -427,6 +430,14 @@ begin
       if i = -1 then QueryPerformanceFrequency(i64)
                 else QueryPerformanceCounter  (i64);
     {$Else}
+      if clock_gettime(CLOCK_MONOTONIC, @ts) = 0 then
+      begin
+        // qpf (-1): ticks per second; qpc (-2): current monotonic counter.
+        // CLOCK_MONOTONIC resolution is 1 ns, so count = ns and freq = 1e9/s.
+        if i = -1 then i64 := 1000000000
+                  else i64 := int64(ts.tv_sec) * 1000000000 + ts.tv_nsec;
+      end
+      else i64 := 0;
     {$EndIf}
       val^ := i64;
     end

@@ -71,7 +71,7 @@ const
 
 implementation
 
-uses {$IfNDef Linux}Windows,{$Else}{$EndIf}
+uses {$IfNDef Linux}Windows,{$Else}DateUtils,{$EndIf}
      SysUtils;
 
 {$IfDef WinCE}
@@ -134,12 +134,34 @@ begin
 end;
 
 class procedure CIO.Copy(const f1, f2: fun.str; overwrite: fun.bool = true);
+{$IfDef Linux}
+var
+  fin, fout: fun.int;
+  buf: array[0..65535] of byte;
+  n: LongInt;
+{$EndIf}
 begin
   {$IfNDef Linux}
   CopyFile(PChar(f1), PChar(f2), not overwrite);
   {$Else}
-  //CopyFile(PChar(f1), PChar(f2), not overwrite);
-  // todo
+  if (not overwrite) and FileExists(f2) then
+    CIO.Check(-1, 'Copy: target already exists: ' + f2);
+  fin := FileOpen(f1, fmOpenRead or fmShareDenyNone);
+  if fin < 0 then CIO.Check(fin, 'Copy: cannot open source: ');
+  try
+    fout := FileCreate(f2);
+    if fout < 0 then CIO.Check(fout, 'Copy: cannot create target: ');
+    try
+      repeat
+        n := FileRead(fin, buf, SizeOf(buf));
+        if n > 0 then FileWrite(fout, buf, n);
+      until n <= 0;
+    finally
+      FileClose(fout);
+    end;
+  finally
+    FileClose(fin);
+  end;
   {$EndIf}
 end;
 
@@ -343,7 +365,8 @@ begin
   {$IfNDef Linux}
     RemoveDirectory(PChar(f1));
   {$Else}
-    // todo
+    // DeleteFile above handles plain files; RemoveDir drops an empty directory.
+    RemoveDir(f1);
   {$EndIf}
   end;
 end;
@@ -508,9 +531,14 @@ end;
 class function CIO.Time(const fn: fun.str; flag: fun.byte = 0; dt: fun.time = 0): fun.time;
 var
   Handle: THandle;
-  FindData: {$IfNDef Linux}TWin32FindData{$Else}fun.int{$EndIf};
+  {$IfNDef Linux}
+  FindData: TWin32FindData;
   SystemTime: TSystemTime;
-  ft: {$IfNDef Linux}TFileTime{$Else}fun.int{$EndIf};
+  ft: TFileTime;
+  {$Else}
+  Age: LongInt;
+  h: fun.int;
+  {$EndIf}
   ret: ^fun.int64;
 begin
   // flag:
@@ -559,6 +587,29 @@ begin
     begin
       ret  := @result;
       ret^ := nFileSizeLow// + nFileSizeHigh shl 32;
+    end;
+  end;
+  {$Else}
+  // Linux has no portable creation/birth time, so both CreationTime (0) and
+  // LastWriteTime (1) map to the modification time. Size (8) = byte length.
+  if flag in [0, 1] then
+  begin
+    if dt = 0 then
+    begin
+      Age := FileAge(fn);
+      if Age >= 0 then result := UnixToDateTime(Age, False);
+    end
+    else
+      FileSetDate(fn, DateTimeToUnix(dt, False));
+  end
+  else // size
+  begin
+    h := FileOpen(fn, fmOpenRead or fmShareDenyNone);
+    if h >= 0 then
+    begin
+      ret  := @result;
+      ret^ := FileSeek(h, 0, Seek_End);
+      FileClose(h);
     end;
   end;
   {$EndIf}

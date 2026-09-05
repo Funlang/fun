@@ -36,7 +36,7 @@ function SetStdOut(const fn: fun.str): fun.int;
 implementation
 
 uses SysUtils
-     {$IfNDef Linux}, Windows{$EndIf}
+     {$IfNDef Linux}, Windows{$Else}, Linux, unixtype{$EndIf}
      , io
      ;
 
@@ -45,11 +45,19 @@ var
   tick: fun.uint;
 
 function GetTickCount: fun.uint;
+{$IfDef Linux}
+var
+  ts: timespec;
+{$EndIf}
 begin
 {$IfNDef Linux}
   result := Windows.GetTickCount;
 {$Else}
-  result := 0;
+  // Monotonic clock in ms; modular (uint32) wraparound mirrors GetTickCount.
+  if clock_gettime(CLOCK_MONOTONIC, @ts) = 0 then
+    result := fun.uint(int64(ts.tv_sec) * 1000 + ts.tv_nsec div 1000000)
+  else
+    result := 0;
 {$EndIf}
 end;
 
