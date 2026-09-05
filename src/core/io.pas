@@ -31,14 +31,14 @@ type
     class procedure Append(const fn, ss: fun.str; cp: fun.word = 0);
     class procedure Check(err: fun.int; const msg: fun.str = '');
     class procedure Close(h: fun.int);
-    class procedure Copy(const f1, f2: fun.str; overwrite: fun.bool = true);
+    class procedure Copy(f1, f2: fun.str; overwrite: fun.bool = true);
     class procedure Find(fn: fun.str; sub, size, rel: fun.bool; act: CFindEach; tag: fun.ptr);
     class function Load(const fn: fun.str; cp: fun.word = 0; mode: fun.int = -1): fun.str;
-    class procedure Move(const f1: fun.str; const f2: fun.str = '');
+    class procedure Move(f1: fun.str; f2: fun.str = '');
     class function Norm(const fn: fun.str): fun.str;
     class function Open(fn: fun.str; forSave: fun.bool = false): fun.int;
     class procedure Save(const fn, ss: fun.str; cp: fun.word = 0; append: fun.bool = false);
-    class function Time(const fn: fun.str; flag: fun.byte = 0; dt: fun.time = 0): fun.time;
+    class function Time(fn: fun.str; flag: fun.byte = 0; dt: fun.time = 0): fun.time;
   end;
   
 
@@ -134,7 +134,7 @@ begin
   FileClose(h);
 end;
 
-class procedure CIO.Copy(const f1, f2: fun.str; overwrite: fun.bool = true);
+class procedure CIO.Copy(f1, f2: fun.str; overwrite: fun.bool = true);
 {$IfDef Linux}
 var
   fin, fout: fun.int;
@@ -142,6 +142,8 @@ var
   n: LongInt;
 {$EndIf}
 begin
+  f1 := Norm(f1);
+  f2 := Norm(f2);
   {$IfNDef Linux}
   CopyFile(PChar(f1), PChar(f2), not overwrite);
   {$Else}
@@ -196,7 +198,11 @@ var
               _act(f2, tag, sz);
             end
             else
-              _find(_fp + sr.Name + '\')
+              {$IfDef Linux}
+_find(_fp + sr.Name + '/')
+{$Else}
+_find(_fp + sr.Name + '\')
+{$EndIf}
             ;
           end;
         until FindNext(sr) <> 0;
@@ -213,7 +219,8 @@ var
   end;
   
 begin
-  if fn[Length(fn)] = '\' then
+  fn := Norm(fn);
+  if (fn <> '') and (fn[Length(fn)] in ['\', '/']) then
   begin
     Delete(fn, Length(fn), 1);
     ft := faDirectory;
@@ -356,8 +363,10 @@ begin
   end;
 end;
 
-class procedure CIO.Move(const f1: fun.str; const f2: fun.str = '');
+class procedure CIO.Move(f1: fun.str; f2: fun.str = '');
 begin
+  f1 := Norm(f1);
+  if f2 <> '' then f2 := Norm(f2);
   if f2 <> '' then
     RenameFile(f1, f2)
   else
@@ -542,7 +551,7 @@ begin
   end;
 end;
 
-class function CIO.Time(const fn: fun.str; flag: fun.byte = 0; dt: fun.time = 0): fun.time;
+class function CIO.Time(fn: fun.str; flag: fun.byte = 0; dt: fun.time = 0): fun.time;
 var
   Handle: THandle;
   {$IfNDef Linux}
@@ -555,6 +564,7 @@ var
   {$EndIf}
   ret: ^fun.int64;
 begin
+  fn := Norm(fn);
   // flag:
   //  0 - CreationTime
   //  1 - LastWriteTime
