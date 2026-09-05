@@ -52,13 +52,14 @@ if [ -n "$PCRE_SRC" ] && [ -f "$PCRE_SRC/pcre_compile.c" ]; then
                  pcre_refcount pcre_study pcre_tables pcre_ucd \
                  pcre_valid_utf8 pcre_version pcre_xclass pcre_string_utils; do
             if [ ! -f "$PCRE_LIB/$f.o" ] || [ "$PCRE_SRC/$f.c" -nt "$PCRE_LIB/$f.o" ]; then
-                gcc -c -O2 -fPIC -DHAVE_CONFIG_H -DSUPPORT_PCRE8 \
+                gcc -c -O2 -fPIC -ffunction-sections -fdata-sections \
+                    -DHAVE_CONFIG_H -DSUPPORT_PCRE8 \
                     -I"$PCRE_SRC" "$PCRE_SRC/$f.c" -o "$PCRE_LIB/$f.o"
             fi
         done
         rm -f "$PCRE_LIB/libpcre.a"
         ar rcs "$PCRE_LIB/libpcre.a" "$PCRE_LIB"/*.o
-        PCRE_FLAGS="-dRegex -Fl$PCRE_LIB -k-lc"
+        PCRE_FLAGS="-dRegex -Fl$PCRE_LIB -k-lc -k--gc-sections"
         echo "Regex enabled (PCRE 8)."
     else
         echo "gcc not found - building WITHOUT regex." >&2
@@ -93,4 +94,4 @@ fi
 # --- Build funcmd ------------------------------------------------
 echo "Building funcmd with $FPC_BIN"
 # shellcheck disable=SC2086
-"$FPC_BIN" funcmd.dpr -B -Sd -O2 -Xs -Tlinux -dLinux $PCRE_FLAGS $FFI_FLAGS "$@"
+"$FPC_BIN" funcmd.dpr -B -Sd -O2 -Xs -XX -CX -Tlinux -dLinux $PCRE_FLAGS $FFI_FLAGS "$@"
