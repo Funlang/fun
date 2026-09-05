@@ -35,7 +35,8 @@ type
     class procedure Find(fn: fun.str; sub, size, rel: fun.bool; act: CFindEach; tag: fun.ptr);
     class function Load(const fn: fun.str; cp: fun.word = 0; mode: fun.int = -1): fun.str;
     class procedure Move(const f1: fun.str; const f2: fun.str = '');
-    class function Open(const fn: fun.str; forSave: fun.bool = false): fun.int;
+    class function Norm(const fn: fun.str): fun.str;
+    class function Open(fn: fun.str; forSave: fun.bool = false): fun.int;
     class procedure Save(const fn, ss: fun.str; cp: fun.word = 0; append: fun.bool = false);
     class function Time(const fn: fun.str; flag: fun.byte = 0; dt: fun.time = 0): fun.time;
   end;
@@ -371,10 +372,19 @@ begin
   end;
 end;
 
-class function CIO.Open(const fn: fun.str; forSave: fun.bool = false): fun.int;
+class function CIO.Norm(const fn: fun.str): fun.str;
+begin
+{$IfNDef Linux}
+  result := fn;
+{$Else}
+  result := StringReplace(fn, '\', '/', [rfReplaceAll]);
+{$EndIf}
+end;
+class function CIO.Open(fn: fun.str; forSave: fun.bool = false): fun.int;
 var
   fp, err: fun.str;
 begin
+  fn := Norm(fn);
   if not forSave then
   begin
     err    := _OpenFailed;
@@ -421,7 +431,11 @@ var
   s: AnsiString;
   
 begin
+{$IfNDef Linux}
   h := Open(StringReplace(fn, '/', '\', [rfReplaceAll]), true);
+{$Else}
+  h := Open(fn, true);
+{$EndIf}
   
   try
     if append then

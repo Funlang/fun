@@ -949,9 +949,10 @@ end;
 
 class function CParser.ParseFileName(const fn: fun.str; prev: CNode): fun.str;
 var
-  path, ret: fun.str;
+  path, ret, fname: fun.str;
 begin
-  result := fn;
+  fname  := CIO.Norm(fn);
+  result := fname;
   if not FileExists(result) then
   begin
     if (result[2] <> ':') and (Pos('\\', result) <> 1) then
