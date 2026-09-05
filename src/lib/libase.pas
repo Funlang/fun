@@ -513,30 +513,33 @@ end;
 // f.find(sub = false, size = false, rel = false)
 // f -> file default
 // f -> directory if endswith '\'
+// Callback for CIO.Find: append each hit to the CNew collection passed as tag.
+// Kept as a module-level (non-nested) procedure: a nested routine has a hidden
+// frame pointer and cannot be called through CIO.Find's plain CFindEach proc
+// pointer on FPC (it would misalign its args and crash).
+procedure _find_collect(const f: fun.str; p: fun.ptr; size: fun.int = -1);
+var
+  fs: CNew;
+  e: CExp;
+begin
+  fs := CNew(p);
+  e := CExp.new(nil);
+  if size >= 0 then
+  begin
+    e.name := f;
+    e.parse(size);
+  end
+  else e.parse(f);
+  fs.items.add(e);
+end;
+
 procedure _find(env: CEnv; exp: CExp; exps: CExps; val: PValue);
 var
   fs: CNew;
-
-  procedure _do(const f: fun.str; p: fun.ptr; size: fun.int = -1);
-  var
-    fs: CNew;
-    e: CExp;
-  begin
-    fs := CNew(p);
-    e := CExp.new(nil);
-    if size >= 0 then
-    begin
-      e.name := f;
-      e.parse(size);
-    end
-    else e.parse(f);
-    fs.items.add(e);
-  end;
-
 begin
   fs := CNew(core.CNew.new(nil).parse(CExps.Create()));
   setObj(val, fs, VarObjNew); del(fs);
-  CIO.Find(exp.asStr, CExps.FindAsVal(exps, 'sub', 0, false), CExps.FindAsVal(exps, 'size', 1, false), CExps.FindAsVal(exps, 'rel', 2, false), @_do, fs);
+  CIO.Find(exp.asStr, CExps.FindAsVal(exps, 'sub', 0, false), CExps.FindAsVal(exps, 'size', 1, false), CExps.FindAsVal(exps, 'rel', 2, false), @_find_collect, fs);
 end;
 
 // f.copy(f2, f3, ...)
