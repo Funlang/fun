@@ -235,6 +235,9 @@ begin
   {$IfDef WinAPI}
   ids['@toCallback'] := CExp.new(nil).parse(fun.uint(@_toCallback));
   {$EndIf}
+  {$IfDef LinuxFFI}
+  ids['@toCallback'] := CExp.new(nil).parse(fun.uint(@_ltoCallback));
+  {$EndIf}
 end;
 
 function CLfun.accept(exp: CExp): fun.bool;
