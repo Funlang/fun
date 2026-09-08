@@ -66,12 +66,110 @@ begin
 end;
 
 //==============================================================
+// 'host'.arg()   -- host environment facts, as a small FD document
+//
+// Zero-cost by design: every fact below is baked in at compile time from
+// preprocessor/compiler switches, so the call performs no runtime OS query
+// (no uname / GetVersionEx / cpuid). It just returns a static FD string.
+//
+// Schema (flat FD, one key per line, parseable by '.getJson(fd:true)'):
+//   fun       -> interpreter version, e.g. "9.0"
+//   os        -> operating system,  e.g. "windows" | "linux" | "wince"
+//   cpu       -> cpu model/arch,    e.g. "i386" | "x86_64" | "arm" | "arch64"
+//   compiler  -> compiler + version,e.g. "fpc 3.2.2" | "delphi"
+//   bits      -> cpu word size,     e.g. 64 | 32
+//
+// Because 'fun' is a Fun keyword, .fun code reads it back as
+//   var h = 'host'.arg().getJson(fd:true);   // h.os, h.cpu, h.compiler, h.bits
+//   var v = h['fun'];                        // version (bracket access)
+// or simply parses the text with a regex.
+function _hostOs: fun.str;
+begin
+  {$IfDef WinCE}
+  result := 'wince';
+  {$Else}
+  {$IfDef Linux}
+  result := 'linux';
+  {$Else}
+  {$IfDef MSWINDOWS}
+  result := 'windows';
+  {$Else}
+  {$IfDef Windows}
+  result := 'windows';
+  {$Else}
+  {$IfDef WIN32}
+  result := 'windows';
+  {$Else}
+  {$IfDef WIN64}
+  result := 'windows';
+  {$Else}
+  {$IfDef Win64}
+  result := 'windows';
+  {$Else}
+  result := 'unknown';
+  {$EndIf}{$EndIf}{$EndIf}{$EndIf}{$EndIf}{$EndIf}{$EndIf}
+end;
+
+function _hostCompiler: fun.str;
+begin
+  {$IfDef FPC}
+  result := 'fpc ' + {$I %FPCVERSION%};
+  {$Else}
+  result := 'delphi';
+  {$EndIf}
+end;
+
+function _hostCpu: fun.str;
+begin
+  {$IfDef CPUX86_64}
+  result := 'x86_64';
+  {$Else}
+  {$IfDef CPUAMD64}
+  result := 'x86_64';
+  {$Else}
+  {$IfDef CPUARCH64}
+  result := 'arch64';
+  {$Else}
+  {$IfDef CPUARM}
+  result := 'arm';
+  {$Else}
+  {$IfDef CPU386}
+  result := 'i386';
+  {$Else}
+  {$IfDef CPU86}
+  result := 'i386';
+  {$Else}
+  {$IfDef CPU64}
+  result := 'cpu64';
+  {$Else}
+  result := 'cpu';
+  {$EndIf}{$EndIf}{$EndIf}{$EndIf}{$EndIf}{$EndIf}{$EndIf}
+end;
+
+function _hostInfo: fun.str;
+begin
+  result :=
+      'fun "'      + '9.0' + '"'#10 +
+      'os "'       + _hostOs       + '"'#10 +
+      'cpu "'      + _hostCpu      + '"'#10 +
+      'compiler "' + _hostCompiler + '"'#10 +
+      'bits '      + IntToStr(SizeOf(fun.ptr) * 8);
+end;
+
+//==============================================================
 // 0.arg()
 // 1.arg()
+// 'host'.arg()
 procedure _arg(env: CEnv; exp: CExp; exps: CExps; val: PValue);
 var
   i: fun.int;
 begin
+  // 'host'.arg() returns compile-time host facts (FD document).
+  if isStr(exp.value) and (exp.asStr = 'host') then
+  begin
+    val^ := _hostInfo();
+    exit;
+  end;
   i := exp.asInt;
   val^ := ParamStr(i);
 end;
