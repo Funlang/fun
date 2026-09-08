@@ -1,7 +1,7 @@
 // Copyright (c) 2010-2026 Zhang Weidong <zwd@funlang.org>
 // SPDX-License-Identifier: MIT
 
-use 'lib-os.fun';
+use 'lib-utils.fun';
 
 #*
   args: xxx...:x
