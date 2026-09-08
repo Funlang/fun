@@ -78,9 +78,10 @@ end;
 //   cpu       -> cpu model/arch,    e.g. "i386" | "x86_64" | "arm" | "arch64"
 //   compiler  -> compiler + version,e.g. "fpc 3.2.2" | "delphi"
 //   bits      -> cpu word size,     e.g. 64 | 32
+//   chars     -> char width in bytes (SizeOf(Char)), e.g. 1 | 2
 //
 // Because 'fun' is a Fun keyword, .fun code reads it back as
-//   var h = 'host'.arg().getJson(fd:true);   // h.os, h.cpu, h.compiler, h.bits
+//   var h = 'host'.arg().getJson(fd:true);   // h.os, h.cpu, h.compiler, h.bits, h.chars
 //   var v = h['fun'];                        // version (bracket access)
 // or simply parses the text with a regex.
 function _hostOs: fun.str;
@@ -148,12 +149,15 @@ end;
 
 function _hostInfo: fun.str;
 begin
+  // FD values stay unquoted where unambiguous; only the numeric-looking
+  // version string ("9.0") keeps quotes so it is read back as a string, not 9.0.
   result :=
-      'fun "'      + '9.0' + '"'#10 +
-      'os "'       + _hostOs       + '"'#10 +
-      'cpu "'      + _hostCpu      + '"'#10 +
-      'compiler "' + _hostCompiler + '"'#10 +
-      'bits '      + IntToStr(SizeOf(fun.ptr) * 8);
+      'fun '      + '"9.0"' + #10 +
+      'os '       + _hostOs       + #10 +
+      'cpu '      + _hostCpu      + #10 +
+      'compiler ' + _hostCompiler + #10 +
+      'bits '     + IntToStr(SizeOf(fun.ptr) * 8) + #10 +
+      'chars '    + IntToStr(SizeOf(fun.char));
 end;
 
 //==============================================================

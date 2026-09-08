@@ -85,22 +85,25 @@ type PValue = base.PValue;
 // f.getapi(name, type)
 procedure _lgetapi(env: CEnv; exp: CExp; exps: CExps; val: PValue);
 var
-  name: fun.str;
+  libname, name: fun.str;
   hlib: TLibHandle;
   hfun: fun.ptr;
   f: CFFIFun;
   e: CExp;
 begin
+  // exp is the shared object name (or '' when calling a raw address); the
+  // optional named arg 'name' is the exported symbol to resolve.
+  libname := exp.asStr;
   hlib := NilHandle;
-  name := exp.asStr;
-  if name <> '' then
+  if libname <> '' then
   begin
-    hlib := LoadLibrary(name);
-    if (hlib = NilHandle) and (Pos('/', name) = 0) and (Pos('.so', name) = 0) then
-      hlib := LoadLibrary(name + '.so'); // bare name, e.g. 'libc'
+    hlib := LoadLibrary(libname);
+    if (hlib = NilHandle) and (Pos('/', libname) = 0) and (Pos('.so', libname) = 0) then
+      hlib := LoadLibrary(libname + '.so'); // bare name, e.g. 'libc'
   end;
 
   hfun := nil;
+  name := '';
   e    := CExps.Find(exps, 'name', 0);
   if e <> nil then
   begin
@@ -110,12 +113,18 @@ begin
       name := e.asStr
     ;
   end;
+
   if hfun = nil then
   begin
-    if (hlib = NilHandle) or (name = '') then
-      raise EBase.Create('getapi: cannot load library / symbol');
+    if hlib = NilHandle then
+      raise EBase.Create('getapi: cannot load library "' + libname + '"');
+    if name = '' then
+      raise EBase.Create('getapi: no symbol name for library "' + libname + '"');
     hfun := fun.ptr(GetProcedureAddress(hlib, name));
+    if hfun = nil then
+      raise EBase.Create('getapi: symbol "' + name + '" not found in "' + libname + '"');
   end;
+
   f := CFFIFun.Create(hlib, hfun, CExps.FindAsVal(exps, 'type', 1, ''));
   setObj(val, f, VarObjNew); del(f);
 end;
@@ -189,13 +198,13 @@ begin
     e := CExp(exps.Item[i]);
     ch := flag[i + 1];
     case ch of
-      's', 'a':
+      's', 'a', 'w':
+        // 'w' degrades to narrow char* on Linux (wchar_t is 4-byte UTF-32, not
+        // UTF-16), so wide-string FFI calls fall back to the 's' behaviour.
         begin
           strs[i] := AnsiString(e.asStr);
           if strs[i] <> '' then slots[i] := QWord(PtrUInt(@strs[i][1]));
         end;
-      'w': // wide string unsupported on Linux (wchar_t is 4-byte UTF-32)
-        raise EBase.Create('getapi: wide-string (w) not supported on Linux FFI');
       'c': // callback: pass a Fun callback's native entry point
         begin
           if e.asObj is CFFICallback then slots[i] := QWord(PtrUInt(CFFICallback(e.asObj).Proc))
@@ -235,12 +244,11 @@ begin
 
   // select the libffi return type from the last type char
   rt := flag[Length(flag)];
-  if rt = 'w' then raise EBase.Create('getapi: wide-string (w) return not supported on Linux FFI');
   case rt of
     'f': rtype := @ffi_type_float;
     'd': rtype := @ffi_type_double;
     'v': rtype := @ffi_type_void;
-  else rtype := @ffi_type_pointer;
+  else rtype := @ffi_type_pointer; // incl. 'w' (degrades to narrow char*)
   end;
   st := ffi_prep_cif(@cif, FFI_DEFAULT_ABI, n, rtype, @at[0]);
   if st <> FFI_OK then raise EBase.Create('getapi: ffi_prep_cif failed');
@@ -252,7 +260,7 @@ begin
   case rt of
     'f': p_val^ := PSingle(@ret)^;
     'd': p_val^ := PDouble(@ret)^;
-    's', 'a': p_val^ := fun.str(PAnsiChar(PtrUInt(ret)));
+    's', 'a', 'w': p_val^ := fun.str(PAnsiChar(PtrUInt(ret)));
     'i'     : p_val^ := fun.int(LongInt(ret));      // C int (low 32 bits / eax)
     'l', 'n': p_val^ := Int64(ret);                 // C long / 64-bit number
     'v'     : p_val^ := NullValue;
@@ -265,8 +273,9 @@ end;
 // f.fn.@toCallback(obj, type, ptr)
 //   type -> '<argchars...>:<retchar>', e.g. ':i', 'ii:i', 'd:d'
 //   arg chars: i(nt32) l(ong64)/n(umber64) f(loat32) d(ouble) s/a(char*) p/c(pointer)
-//   ret chars: same plus v(void). Wide char 'w' is not supported on Linux
-//   (wchar_t is 4-byte UTF-32). cdecl (SysV) is always used.
+//   ret chars: same plus v(void). 'w' (wide-string) is accepted on Linux but
+//   degrades to the narrow 's' semantics (wchar_t is 4-byte UTF-32, not UTF-16).
+//   cdecl (SysV) is always used.
 procedure _ltoCallback(env: CEnv; exp: CExp; exps: CExps; val: PValue);
 var
   c: CFFICallback;
@@ -324,24 +333,20 @@ begin
 
   SetLength(FAt, Length(FArgs));
   for i := 1 to Length(FArgs) do
-    if FArgs[i] = 'w' then
-      raise EBase.Create('toCallback: wide-string (w) not supported on Linux FFI')
-    else
     case FArgs[i] of
       'i': FAt[i - 1] := @ffi_type_sint32;
       'l', 'n': FAt[i - 1] := @ffi_type_sint64;
       'f': FAt[i - 1] := @ffi_type_float;
       'd': FAt[i - 1] := @ffi_type_double;
-    else FAt[i - 1] := @ffi_type_pointer; // p/c/s/a
+    else FAt[i - 1] := @ffi_type_pointer; // p/c/s/a/w (w degrades to char*)
     end;
 
-  if FRet = 'w' then raise EBase.Create('toCallback: wide-string (w) not supported on Linux FFI');
   case FRet of
     'i': rtype := @ffi_type_sint32;
     'l', 'n': rtype := @ffi_type_sint64;
     'f': rtype := @ffi_type_float;
     'd': rtype := @ffi_type_double;
-    'c', 'p', 's', 'a': rtype := @ffi_type_pointer;
+    'c', 'p', 's', 'a', 'w': rtype := @ffi_type_pointer; // 'w' degrades to char*
   else rtype := @ffi_type_void; // 'v'
   end;
 
@@ -385,8 +390,7 @@ begin
         'l', 'n': e.assign(PInt64(args[i])^);
         'f': e.assign(PSingle(args[i])^);
         'd': e.assign(PDouble(args[i])^);
-        'w': e.assign(fun.str(PWideChar(PPointer(args[i])^)));
-        's', 'a': e.assign(fun.str(PAnsiChar(PPointer(args[i])^)));
+        'w', 's', 'a': e.assign(fun.str(PAnsiChar(PPointer(args[i])^)));
         'c', 'p': e.assign(Int64(PtrUInt(PPointer(args[i])^)));
       else e.assign(0);
       end;
