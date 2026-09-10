@@ -264,7 +264,11 @@ begin
     'i'     : p_val^ := fun.int(LongInt(ret));      // C int (low 32 bits / eax)
     'l', 'n': p_val^ := Int64(ret);                 // C long / 64-bit number
     'v'     : p_val^ := NullValue;
-  else     p_val^ := PtrUInt(ret);                   // 'p' / default
+  // 'p': Int64, not PtrUInt. On non-Unicode builds isNum() does not accept
+  // varUInt64, so a PtrUInt result could not be fed back into another FFI
+  // call (it silently passed 0). Int64 keeps the full 64-bit value and is
+  // the same convention used for @toCallback(ptr: true) addresses.
+  else     p_val^ := Int64(ret);                   // 'p' / default
   end;
   result := p_val;
 end;
