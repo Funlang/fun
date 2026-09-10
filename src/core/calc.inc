@@ -116,9 +116,14 @@ procedure C01(env: CEnv; e1, e2: PValue);
   procedure _C01;
   var t: CValue;
   begin
-    _NullAddE1(e1, e2);
-    t := _Add2(e1, e2);
-    e1^ := e1^ + t; // +
+    if (PData(e1)^.VType <= varNull) or (PData(e2)^.VType <= varNull) then
+    begin
+      _NullAddE1(e1, e2);
+      t := _Add2(e1, e2);
+      e1^ := e1^ + t; // +
+    end
+    else
+      e1^ := e1^ + e2^; // +
   end;
 
 var i: fun.int; j: fun.dword;
@@ -176,9 +181,14 @@ begin
 {$Else}
 var t: CValue;
 begin
-  _NullAddE1(e1, e2);
-  t := _Add2(e1, e2);
-  e1^ := e1^ + t; // +
+  if (PData(e1)^.VType <= varNull) or (PData(e2)^.VType <= varNull) then
+  begin
+    _NullAddE1(e1, e2);
+    t := _Add2(e1, e2);
+    e1^ := e1^ + t; // +
+  end
+  else
+    e1^ := e1^ + e2^; // +
 {$EndIf}
 end;
 
@@ -187,9 +197,14 @@ procedure C02(env: CEnv; e1, e2: PValue);
   procedure _C02;
   var t: CValue;
   begin
-    _NullNumE1(e1);
-    t := _Num2(e2);
-    e1^ := e1^ - t; // -
+    if (PData(e1)^.VType <= varNull) or (PData(e2)^.VType <= varNull) then
+    begin
+      _NullNumE1(e1);
+      t := _Num2(e2);
+      e1^ := e1^ - t; // -
+    end
+    else
+      e1^ := e1^ - e2^; // -
   end;
 
 var i: fun.int;
@@ -238,9 +253,14 @@ begin
 {$Else}
 var t: CValue;
 begin
-  _NullNumE1(e1);
-  t := _Num2(e2);
-  e1^ := e1^ - t; // -
+  if (PData(e1)^.VType <= varNull) or (PData(e2)^.VType <= varNull) then
+  begin
+    _NullNumE1(e1);
+    t := _Num2(e2);
+    e1^ := e1^ - t; // -
+  end
+  else
+    e1^ := e1^ - e2^; // -
 {$EndIf}
 end;
 
@@ -249,9 +269,14 @@ procedure C03(env: CEnv; e1, e2: PValue);
   procedure _C03;
   var t: CValue;
   begin
-    _NullNumE1(e1);
-    t := _Num2(e2);
-    e1^ := e1^ * t; // *
+    if (PData(e1)^.VType <= varNull) or (PData(e2)^.VType <= varNull) then
+    begin
+      _NullNumE1(e1);
+      t := _Num2(e2);
+      e1^ := e1^ * t; // *
+    end
+    else
+      e1^ := e1^ * e2^; // *
   end;
 
 var i: fun.int;
@@ -300,9 +325,14 @@ begin
 {$Else}
 var t: CValue;
 begin
-  _NullNumE1(e1);
-  t := _Num2(e2);
-  e1^ := e1^ * t; // *
+  if (PData(e1)^.VType <= varNull) or (PData(e2)^.VType <= varNull) then
+  begin
+    _NullNumE1(e1);
+    t := _Num2(e2);
+    e1^ := e1^ * t; // *
+  end
+  else
+    e1^ := e1^ * e2^; // *
 {$EndIf}
 end;
 
@@ -311,9 +341,14 @@ procedure C04(env: CEnv; e1, e2: PValue);
   procedure _C04;
   var t: CValue;
   begin
-    _NullNumE1(e1);
-    t := _Num2(e2);
-    e1^ := e1^ / t; // /
+    if (PData(e1)^.VType <= varNull) or (PData(e2)^.VType <= varNull) then
+    begin
+      _NullNumE1(e1);
+      t := _Num2(e2);
+      e1^ := e1^ / t; // /
+    end
+    else
+      e1^ := e1^ / e2^; // /
   end;
 
 //var i: fun.int;
@@ -364,9 +399,14 @@ begin
 {$Else}
 var t: CValue;
 begin
-  _NullNumE1(e1);
-  t := _Num2(e2);
-  e1^ := e1^ / t; // /
+  if (PData(e1)^.VType <= varNull) or (PData(e2)^.VType <= varNull) then
+  begin
+    _NullNumE1(e1);
+    t := _Num2(e2);
+    e1^ := e1^ / t; // /
+  end
+  else
+    e1^ := e1^ / e2^; // /
 {$EndIf}
 end;
 
@@ -375,9 +415,14 @@ procedure C05(env: CEnv; e1, e2: PValue);
   procedure _C05;
   var t: CValue;
   begin
-    _NullNumE1(e1);
-    t := _Num2(e2);
-    e1^ := e1^ div t; // d
+    if (PData(e1)^.VType <= varNull) or (PData(e2)^.VType <= varNull) then
+    begin
+      _NullNumE1(e1);
+      t := _Num2(e2);
+      e1^ := e1^ div t; // d
+    end
+    else
+      e1^ := e1^ div e2^; // d
   end;
 
 var i: fun.int;
@@ -426,9 +471,14 @@ begin
 {$Else}
 var t: CValue;
 begin
-  _NullNumE1(e1);
-  t := _Num2(e2);
-  e1^ := e1^ div t; // d
+  if (PData(e1)^.VType <= varNull) or (PData(e2)^.VType <= varNull) then
+  begin
+    _NullNumE1(e1);
+    t := _Num2(e2);
+    e1^ := e1^ div t; // d
+  end
+  else
+    e1^ := e1^ div e2^; // d
 {$EndIf}
 end;
 
@@ -437,9 +487,14 @@ procedure C06(env: CEnv; e1, e2: PValue);
   procedure _C06;
   var t: CValue;
   begin
-    _NullNumE1(e1);
-    t := _Num2(e2);
-    e1^ := e1^ mod t; // m
+    if (PData(e1)^.VType <= varNull) or (PData(e2)^.VType <= varNull) then
+    begin
+      _NullNumE1(e1);
+      t := _Num2(e2);
+      e1^ := e1^ mod t; // m
+    end
+    else
+      e1^ := e1^ mod e2^; // m
   end;
 
 var i: fun.int;
@@ -488,9 +543,14 @@ begin
 {$Else}
 var t: CValue;
 begin
-  _NullNumE1(e1);
-  t := _Num2(e2);
-  e1^ := e1^ mod t; // m
+  if (PData(e1)^.VType <= varNull) or (PData(e2)^.VType <= varNull) then
+  begin
+    _NullNumE1(e1);
+    t := _Num2(e2);
+    e1^ := e1^ mod t; // m
+  end
+  else
+    e1^ := e1^ mod e2^; // m
 {$EndIf}
 end;
 
