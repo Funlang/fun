@@ -49,6 +49,7 @@ var _HOST_MAX_PATH = 260;
 var _hostGetCurrPath;   // Windows: kernel32.GetCurrentDirectory
 var _hostGetTempPath;   // Windows: kernel32.GetTempPath
 var _hostGetFullPath;   // Windows: kernel32.GetFullPathName
+var _hostGetCmdLine;    // Windows: kernel32.GetCommandLine
 var _hostGetCwd;        // Linux: libc.getcwd
 var _hostGetenv;        // Linux: libc.getenv
 var _hostStrlen;        // Linux: libc.strlen
@@ -59,10 +60,38 @@ if _isLinux then
   _hostStrlen  = 'libc.so.6'.getapi('strlen',  'p:i');
 else
   _hostSep = '\';
+  _hostGetCmdLine  = 'kernel32'.getapi('GetCommandLine',       ':s');
   _hostGetCurrPath = 'kernel32'.getapi('GetCurrentDirectory', 'ip:i');
   _hostGetTempPath = 'kernel32'.getapi('GetTempPath',         'ip:i');
   _hostGetFullPath = 'kernel32'.getapi('GetFullPathName',     'sipp:i');
 end if;
+
+//--------------------------------------------------------------
+// command line
+//
+// Windows returns the raw process command line. Linux has no such string, so
+// it is rebuilt from argv and quoted the Windows way (wrap in double quotes,
+// double any inner quote) - that way the existing lib-param/lib-cmdline
+// tokenizer keeps working unchanged on both hosts.
+//--------------------------------------------------------------
+fun HostCommandLine()
+  if _isLinux then
+    result = '';
+    var i = 0;
+    while i.arg() <> '' do
+      var a = i.arg();
+      var dq = 34.toChar();
+      if a.subpos(' ') >= 0 or a.subpos(dq) >= 0 then
+        a = '"' & a.replace(dq, dq & dq) & '"';
+      end if;
+      if result <> '' then result &= ' '; end if;
+      result &= a;
+      i += 1;
+    end do;
+  else
+    result = _hostGetCmdLine();
+  end if;
+end fun;
 
 //--------------------------------------------------------------
 // current directory

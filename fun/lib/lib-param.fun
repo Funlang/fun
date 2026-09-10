@@ -1,7 +1,7 @@
 // Copyright (c) 2010-2026 Zhang Weidong <zwd@funlang.org>
 // SPDX-License-Identifier: MIT
 
-use 'lib-os.fun';
+use 'lib-host.fun';
 
 //==============================================================
 // Param
@@ -11,13 +11,13 @@ use 'lib-os.fun';
 fun GetCmdLineParams()
   result = new [];
 
-  var s = 'kernel32'.getapi('GetCommandLine', ':s').call(); //?. s;
+  var s = HostCommandLine(); //?. s;
   var m = s.match(/("([^"]*+|"")++"|[^"\s]++)++/g); //?. m.@toJson();
   result.@exe = escape(m[0]);
   if result.@exe =~ /\\/ then
     result.@path = result.@exe.replace(/[^\\]++$/, '');
   else
-    result.@path = GetCurrPath() & '\';
+    result.@path = HostCurrPath() & HostSep();
   end if;
 
   var i = 0;
