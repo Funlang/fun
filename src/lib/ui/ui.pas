@@ -88,7 +88,7 @@ begin
     e := CExps.Find(exps, 'onclose', 3);
     if e <> nil then
     begin
-      p := fun.ptr(fun.uint(e.value^));
+      p := asPtr(e.value);
       if p <> nil then
       begin
         f.CloseFun := p;
@@ -98,7 +98,7 @@ begin
     e := CExps.Find(exps, 'onmsg', 4);
     if e <> nil then
     begin
-      p := fun.ptr(fun.uint(e.value^));
+      p := asPtr(e.value);
       if p <> nil then
       begin
         f.MsgFun := p;
@@ -265,9 +265,9 @@ end;
 constructor CLform.Create;
 begin
   inherited Create;
-  ids['show'] := CExp.new(nil).parse(fun.uint(@_show));
-  ids['hwnd'] := CExp.new(nil).parse(fun.uint(@_hwnd));
-  ids['html'] := CExp.new(nil).parse(fun.uint(@_html));
+  ids['show'] := CExp.new(nil).parse(Int64(PtrUInt(@_show)));
+  ids['hwnd'] := CExp.new(nil).parse(Int64(PtrUInt(@_hwnd)));
+  ids['html'] := CExp.new(nil).parse(Int64(PtrUInt(@_html)));
   {$IfDef IDE}
     OnMsging := false;
   {$EndIf}
@@ -314,10 +314,10 @@ end;
 constructor CLui.Create;
 begin
   inherited Create;
-  ids['form']   := CExp.new(nil).parse(fun.uint(@_form));
-  ids['run']    := CExp.new(nil).parse(fun.uint(@_run));
-  ids['delay']  := CExp.new(nil).parse(fun.uint(@_delay));
-  ids['dialog'] := CExp.new(nil).parse(fun.uint(@_dialog));
+  ids['form']   := CExp.new(nil).parse(Int64(PtrUInt(@_form)));
+  ids['run']    := CExp.new(nil).parse(Int64(PtrUInt(@_run)));
+  ids['delay']  := CExp.new(nil).parse(Int64(PtrUInt(@_delay)));
+  ids['dialog'] := CExp.new(nil).parse(Int64(PtrUInt(@_dialog)));
 end;
 
 function CLui.accept(exp: CExp): fun.bool;

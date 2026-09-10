@@ -423,12 +423,12 @@ end;
 constructor CLset.Create;
 begin
   inherited Create;
-  ids['@count']  := CExp.new(nil).parse(fun.uint(@_count));
-  ids['@length'] := CExp.new(nil).parse(fun.uint(@_count));
-  ids['@each']   := CExp.new(nil).parse(fun.uint(@_each));
-  ids['@add']    := CExp.new(nil).parse(fun.uint(@_add));
-  ids['@clone']  := CExp.new(nil).parse(fun.uint(@_clone));
-  ids['@toJson'] := CExp.new(nil).parse(fun.uint(@_toJson));
+  ids['@count']  := CExp.new(nil).parse(Int64(PtrUInt(@_count)));
+  ids['@length'] := CExp.new(nil).parse(Int64(PtrUInt(@_count)));
+  ids['@each']   := CExp.new(nil).parse(Int64(PtrUInt(@_each)));
+  ids['@add']    := CExp.new(nil).parse(Int64(PtrUInt(@_add)));
+  ids['@clone']  := CExp.new(nil).parse(Int64(PtrUInt(@_clone)));
+  ids['@toJson'] := CExp.new(nil).parse(Int64(PtrUInt(@_toJson)));
 end;
 
 function CLset.accept(exp: CExp): fun.bool;

@@ -104,7 +104,7 @@ begin
   if e <> nil then
   begin
     if isNum(e.value) then
-      hfun := fun.ptr(fun.uint(e.value^))
+      hfun := asPtr(e.value)   // numeric address: read full width
     else
       name := e.asStr
     ;

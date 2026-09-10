@@ -220,7 +220,9 @@ begin
   v := ids[id];
   if v <> nil then
   begin
-    CPasFun(fun.ptr(fun.uint(v.value^)))(env, exp, exps, val);
+    // asPtr: full-width read, so dispatch still works when code addresses
+    // exceed 32 bits (PIE / Win64 builds).
+    CPasFun(asPtr(v.value))(env, exp, exps, val);
     result := true;
   end;
 end;
@@ -230,13 +232,13 @@ constructor CLfun.Create;
 begin
   inherited Create;
   {$IfDef WinCOM}
-  ids['@toEvent'] := CExp.new(nil).parse(fun.uint(@_toEvent));
+  ids['@toEvent'] := CExp.new(nil).parse(Int64(PtrUInt(@_toEvent)));
   {$EndIf}
   {$IfDef WinAPI}
-  ids['@toCallback'] := CExp.new(nil).parse(fun.uint(@_toCallback));
+  ids['@toCallback'] := CExp.new(nil).parse(Int64(PtrUInt(@_toCallback)));
   {$EndIf}
   {$IfDef LinuxFFI}
-  ids['@toCallback'] := CExp.new(nil).parse(fun.uint(@_ltoCallback));
+  ids['@toCallback'] := CExp.new(nil).parse(Int64(PtrUInt(@_ltoCallback)));
   {$EndIf}
 end;
 
