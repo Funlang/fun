@@ -671,11 +671,11 @@ begin
   e := CExps.Find(exps, 'dest', 0);
   if (e <> nil) and isNum(e.value) then
   begin
-    p := fun.ptr(e.asInt);
+    p := asPtr(e.value);
     q := @s[1];
     i := CExps.FindAsVal(exps, 'len', 1, 0);
     if i = 0 then i := Length(s);
-    if isNum(PData(exp.value)^.VType) then q := fun.ptr(exp.asInt);
+    if isNum(PData(exp.value)^.VType) then q := asPtr(exp.value);
     Move(q^, p^, i * sizeof(char));
   end else
     CIO.Move(s, CExps.FindAsVal(exps, '', 0, ''))
@@ -694,7 +694,7 @@ begin
   if not isStr(exp.value) or (s = '') then exit;
   ed := CExps.Find(exps, 'dest', 0);
   if ed = nil then exit;
-  d  := fun.str(fun.ptr(PData(ed.value).VInteger));
+  d  := fun.str(rawPtr(ed.value));
   if not isStr(ed.value) or (d = '') then exit;
 
   ls  := Length(s);
@@ -708,7 +708,7 @@ begin
     raise EBase.Create('out of bounds');
 
   ps := @s[1 + pos];
-  pd := fun.ptr(PData(ed.value).VInteger + pod);
+  pd := fun.ptr(PtrUInt(rawPtr(ed.value)) + PtrUInt(pod));
   Move(ps^, pd^, len * sizeOf(char));
   val^ := len;
 end;
@@ -780,7 +780,7 @@ begin
   begin
     s := exp.asStr();
     if p = -1 then
-      val^ := PData(exp.value).VInteger
+      val^ := PtrInt(rawPtr(exp.value))
     else if p = 1 then
     begin
       i := @s[1];

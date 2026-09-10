@@ -1,7 +1,9 @@
 // Copyright (c) 2010-2026 Zhang Weidong <zwd@funlang.org>
 // SPDX-License-Identifier: MIT
 
-var SizeOfPtr = 4;
+// Word size of the running build (4 on 32-bit, 8 on 64-bit). CList stores raw
+// pointers, so the manual shift below must step by the host's word size.
+var SizeOfPtr = 'host'.arg().getJson(fd: true).bits div 8;
 
 class Stack()
   var list = new [];

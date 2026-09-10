@@ -171,6 +171,8 @@ function isOle(val: PValue): fun.bool;
 function varComp(v1, v2: PValue; isCase: fun.bool): ECompResult;
 
 function asObj(val: PValue): CBase;
+function asPtr(val: PValue): fun.ptr;
+function rawPtr(val: PValue): fun.ptr;
 procedure setObj(val: PValue; obj: CBase; vt: fun.word = VarObject);
 procedure clear(val: PValue);
 
@@ -249,6 +251,43 @@ begin
       result := nil
     ;
   end;
+end;
+
+// Pointer-width read of a numeric value. Unlike 'fun.int(val^)' (32-bit, truncates
+// addresses on 64-bit targets), this converts through Int64 so a full-width address
+// survives; on 32-bit targets Int64 -> PtrUInt -> ptr is still exactly 32 bits.
+function asPtr(val: PValue): fun.ptr;
+begin
+  result := fun.ptr(PtrUInt(Int64(val^)));
+end;
+
+// On 64-bit targets pointers are wider than fun.int, so raw-memory builtins
+// must not read the 32-bit VInteger field when the value is a pointer or int64.
+{$IfDef Win64}
+  {$Define FunPtrWide}
+{$EndIf}
+{$IfDef FPC}
+  {$IfDef CPU64}
+    {$Define FunPtrWide}
+  {$EndIf}
+{$EndIf}
+
+// Raw pointer-sized word stored in a value, for the raw-memory builtins
+// (.move / .movs / .toNum(ptr:-1)) that pass addresses through the value model.
+// String payloads and varInt64 values share the 8-byte value slot, so VPointer
+// reads them full width; every other numeric type is 32-bit as before.
+function rawPtr(val: PValue): fun.ptr;
+begin
+{$IfDef FunPtrWide}
+  with PData(val)^ do
+    if isStr(VType) or (VType = varInt64) then
+      result := fun.ptr(PtrUInt(VPointer))
+    else
+      result := fun.ptr(PtrUInt(VInteger))
+  ;
+{$Else}
+  result := fun.ptr(PtrUInt(PData(val)^.VInteger));
+{$EndIf}
 end;
 
 procedure setObj(val: PValue; obj: CBase; vt: fun.word);

@@ -56,7 +56,9 @@ begin
     end
     else if e.asStr = 'ptr' then
     begin
-      val^ := fun.int(fun.ptr(l.List));
+      // PtrInt/PtrUInt are pointer-wide (32-bit on 32-bit targets, 64-bit on 64-bit),
+      // so the returned address is not truncated on x86_64/Win64.
+      val^ := PtrInt(l.List);
       exit;
     end;
   end;
