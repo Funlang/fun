@@ -255,10 +255,20 @@ end;
 
 // Pointer-width read of a numeric value. Unlike 'fun.int(val^)' (32-bit, truncates
 // addresses on 64-bit targets), this converts through Int64 so a full-width address
-// survives; on 32-bit targets Int64 -> uintptr -> ptr is still exactly 32 bits.
+// survives; on 32-bit targets the value is truncated to the pointer width.
+//
+// The conversion deliberately avoids 'fun.ptr(fun.uintptr(Int64(val^)))': Delphi
+// rejects typecasts between Int64 and narrower ordinals ('E2089 Invalid typecast'),
+// which is exactly the 32-bit path where uintptr is LongWord/Cardinal. Assigning to
+// an Int64 and copying the low pointer-sized bytes keeps the same conversion and
+// truncation semantics on every supported (little-endian) target.
 function asPtr(val: PValue): fun.ptr;
+var
+  v: Int64;
 begin
-  result := fun.ptr(fun.uintptr(Int64(val^)));
+  v := val^;
+  result := nil;
+  Move(v, result, SizeOf(fun.ptr));
 end;
 
 // On 64-bit targets pointers are wider than fun.int, so raw-memory builtins
