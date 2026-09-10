@@ -334,7 +334,9 @@ function _asJson(hash: CHash; cs: CSet; lev: fun.int; format: fun.int = 0; json:
     s: fun.str;
     b: fun.char;
   begin
-    s := SysUtils.Format('@%x', [fun.uint(fun.ptr(cs.items))]);
+    // Object identity key for cycle detection: use the full pointer, not
+    // fun.uint (32-bit), so two live objects cannot collide on x86_64/Win64.
+    s := SysUtils.Format('@%x', [PtrUInt(cs.items)]);
     if hash.ItemById[s] <> nil then
     begin
       result := '"(Object)"'; //0x' + s + ')"';
