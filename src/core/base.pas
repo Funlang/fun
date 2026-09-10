@@ -253,26 +253,8 @@ begin
   end;
 end;
 
-// Pointer-width read of a numeric value. Unlike 'fun.int(val^)' (32-bit, truncates
-// addresses on 64-bit targets), this converts through Int64 so a full-width address
-// survives; on 32-bit targets the value is truncated to the pointer width.
-//
-// The conversion deliberately avoids 'fun.ptr(fun.uintptr(Int64(val^)))': Delphi
-// rejects typecasts between Int64 and narrower ordinals ('E2089 Invalid typecast'),
-// which is exactly the 32-bit path where uintptr is LongWord/Cardinal. Assigning to
-// an Int64 and copying the low pointer-sized bytes keeps the same conversion and
-// truncation semantics on every supported (little-endian) target.
-function asPtr(val: PValue): fun.ptr;
-var
-  v: Int64;
-begin
-  v := val^;
-  result := nil;
-  Move(v, result, SizeOf(fun.ptr));
-end;
-
-// On 64-bit targets pointers are wider than fun.int, so raw-memory builtins
-// must not read the 32-bit VInteger field when the value is a pointer or int64.
+// On 64-bit targets pointers are wider than fun.int, so reading a value as an
+// address must not fall back to the 32-bit VInteger field.
 {$IfDef Win64}
   {$Define FunPtrWide}
 {$EndIf}
@@ -281,6 +263,28 @@ end;
     {$Define FunPtrWide}
   {$EndIf}
 {$EndIf}
+
+// Pointer-width read of a numeric value. Unlike 'fun.int(val^)' (32-bit, truncates
+// addresses on 64-bit targets), this reads the value slot at pointer width, so a
+// full-width address survives while 32-bit targets stay exactly 32 bits.
+//
+// No Int64/ordinal typecast is used: Delphi rejects typecasts between Int64 and
+// narrower ordinals ('E2089 Invalid typecast'), which would be the 32-bit path.
+// The value is already stored at pointer width, so a plain field read suffices:
+// varInt64 holds the full word, every other numeric type is 32-bit.
+function asPtr(val: PValue): fun.ptr;
+begin
+{$IfDef FunPtrWide}
+  with PData(val)^ do
+    if VType = varInt64 then
+      result := fun.ptr(fun.uintptr(VPointer))
+    else
+      result := fun.ptr(fun.uintptr(VInteger))
+  ;
+{$Else}
+  result := fun.ptr(fun.uintptr(PData(val)^.VInteger));
+{$EndIf}
+end;
 
 // Raw pointer-sized word stored in a value, for the raw-memory builtins
 // (.move / .movs / .toNum(ptr:-1)) that pass addresses through the value model.

@@ -47,22 +47,23 @@ type
 
   ptr    = Pointer;
 
-  // Pointer-wide integers, in both signed and unsigned flavors. Compiler
-  // specific pointer-sized types (PtrInt/PtrUInt/NativeInt/NativeUInt/...)
-  // are kept out of every other unit; platform selection lives here (and in
-  // base.pas). On 64-bit targets these are 64-bit, so code addresses survive
-  // the value model's Int64 storage.
+  // Pointer-wide integers, signed and unsigned. Platform selection lives here,
+  // next to the other aliases, so no other unit has to name a compiler-specific
+  // pointer-sized type (PtrInt/PtrUInt/NativeInt/NativeUInt/...). Any 64-bit
+  // target keeps full-width addresses; 32-bit targets are unchanged.
+  // FPC marks 64-bit with CPU64, Delphi with Win64.
+  {$IfDef Win64}
+    {$Define FunPtrWide}
+  {$EndIf}
   {$IfDef CPU64}
+    {$Define FunPtrWide}
+  {$EndIf}
+  {$IfDef FunPtrWide}
   intptr  = int64;
   uintptr = QWord;
   {$Else}
-    {$IfDef CPUX64}
-    intptr  = int64;
-    uintptr = QWord;
-    {$Else}
-    intptr  = int32;
-    uintptr = uint32;
-    {$EndIf}
+  intptr  = int32;
+  uintptr = uint32;
   {$EndIf}
 
 const
