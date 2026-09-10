@@ -69,12 +69,56 @@ begin
   result := not funBoolOf(@mv);
 end;
 
+//--------------------------------------------------------------
+// FPC's RTL Variant arithmetic *propagates* Empty/Null (Empty + 1 = Empty),
+// while Delphi/COM treat Empty as 0 (or '' when concatenating) and Fun's own
+// comparison already treats null as 0/'' too. So before handing + - * / div mod
+// to the RTL, replace a null operand with the zero the operation expects; this
+// keeps arithmetic consistent with '=' and with the Delphi build.
+//
+// Only VType <= varNull (varEmpty/varNull) is touched - a real numeric 0 or an
+// empty string is left as is, so no existing behavior changes.
+//
+// e1 is the accumulator (the result is written back to it), so it may be
+// normalized in place. e2 must NOT be written: it can be a live variable
+// (e.g. `1 + x`), so a normalized copy is returned instead.
+procedure _NullNumE1(e: PValue);
+begin
+  if PData(e)^.VType <= varNull then
+    e^ := 0;
+end;
+
+procedure _NullAddE1(e1, e2: PValue);
+begin
+  if PData(e1)^.VType <= varNull then
+  begin
+    if isStr(e2) then e1^ := '' else e1^ := 0;
+  end;
+end;
+
+function _Num2(e2: PValue): CValue;
+begin
+  if PData(e2)^.VType <= varNull then result := 0 else result := e2^;
+end;
+
+function _Add2(e1, e2: PValue): CValue;
+begin
+  if PData(e2)^.VType <= varNull then
+  begin
+    if isStr(e1) then result := '' else result := 0;
+  end
+  else result := e2^;
+end;
+
 //==============================================================
 procedure C01(env: CEnv; e1, e2: PValue);
 {$IfDef CalcOpt}
   procedure _C01;
+  var t: CValue;
   begin
-    e1^ := e1^ + e2^; // +
+    _NullAddE1(e1, e2);
+    t := _Add2(e1, e2);
+    e1^ := e1^ + t; // +
   end;
 
 var i: fun.int; j: fun.dword;
@@ -130,16 +174,22 @@ begin
 
   _: _C01;
 {$Else}
+var t: CValue;
 begin
-  e1^ := e1^ + e2^; // +
+  _NullAddE1(e1, e2);
+  t := _Add2(e1, e2);
+  e1^ := e1^ + t; // +
 {$EndIf}
 end;
 
 procedure C02(env: CEnv; e1, e2: PValue);
 {$IfDef CalcOpt}
   procedure _C02;
+  var t: CValue;
   begin
-    e1^ := e1^ - e2^; // -
+    _NullNumE1(e1);
+    t := _Num2(e2);
+    e1^ := e1^ - t; // -
   end;
 
 var i: fun.int;
@@ -186,16 +236,22 @@ begin
 
   _: _C02;
 {$Else}
+var t: CValue;
 begin
-  e1^ := e1^ - e2^; // -
+  _NullNumE1(e1);
+  t := _Num2(e2);
+  e1^ := e1^ - t; // -
 {$EndIf}
 end;
 
 procedure C03(env: CEnv; e1, e2: PValue);
 {$IfDef CalcOpt}
   procedure _C03;
+  var t: CValue;
   begin
-    e1^ := e1^ * e2^; // *
+    _NullNumE1(e1);
+    t := _Num2(e2);
+    e1^ := e1^ * t; // *
   end;
 
 var i: fun.int;
@@ -242,16 +298,22 @@ begin
 
   _: _C03;
 {$Else}
+var t: CValue;
 begin
-  e1^ := e1^ * e2^; // *
+  _NullNumE1(e1);
+  t := _Num2(e2);
+  e1^ := e1^ * t; // *
 {$EndIf}
 end;
 
 procedure C04(env: CEnv; e1, e2: PValue);
 {$IfDef CalcOpt}
   procedure _C04;
+  var t: CValue;
   begin
-    e1^ := e1^ / e2^; // /
+    _NullNumE1(e1);
+    t := _Num2(e2);
+    e1^ := e1^ / t; // /
   end;
 
 //var i: fun.int;
@@ -300,16 +362,22 @@ begin
 
   _: _C04;
 {$Else}
+var t: CValue;
 begin
-  e1^ := e1^ / e2^; // /
+  _NullNumE1(e1);
+  t := _Num2(e2);
+  e1^ := e1^ / t; // /
 {$EndIf}
 end;
 
 procedure C05(env: CEnv; e1, e2: PValue);
 {$IfDef CalcOpt}
   procedure _C05;
+  var t: CValue;
   begin
-    e1^ := e1^ div e2^; // d
+    _NullNumE1(e1);
+    t := _Num2(e2);
+    e1^ := e1^ div t; // d
   end;
 
 var i: fun.int;
@@ -356,16 +424,22 @@ begin
 
   _: _C05;
 {$Else}
+var t: CValue;
 begin
-  e1^ := e1^ div e2^; // d
+  _NullNumE1(e1);
+  t := _Num2(e2);
+  e1^ := e1^ div t; // d
 {$EndIf}
 end;
 
 procedure C06(env: CEnv; e1, e2: PValue);
 {$IfDef CalcOpt}
   procedure _C06;
+  var t: CValue;
   begin
-    e1^ := e1^ mod e2^; // m
+    _NullNumE1(e1);
+    t := _Num2(e2);
+    e1^ := e1^ mod t; // m
   end;
 
 var i: fun.int;
@@ -412,8 +486,11 @@ begin
 
   _: _C06;
 {$Else}
+var t: CValue;
 begin
-  e1^ := e1^ mod e2^; // m
+  _NullNumE1(e1);
+  t := _Num2(e2);
+  e1^ := e1^ mod t; // m
 {$EndIf}
 end;
 
