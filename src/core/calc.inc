@@ -69,12 +69,18 @@ begin
   result := not funBoolOf(@mv);
 end;
 
+{$IfDef FPC}
 //--------------------------------------------------------------
 // FPC's RTL Variant arithmetic *propagates* Empty/Null (Empty + 1 = Empty),
 // while Delphi/COM treat Empty as 0 (or '' when concatenating) and Fun's own
 // comparison already treats null as 0/'' too. So before handing + - * / div mod
 // to the RTL, replace a null operand with the zero the operation expects; this
 // keeps arithmetic consistent with '=' and with the Delphi build.
+//
+// This is FPC-only: Delphi/COM already normalize Empty the same way, so gating it
+// keeps the Delphi (Windows 32-bit) arithmetic hot path free of the VType checks
+// and the extra Variant copy. Semantics per target are unchanged - FPC gets the
+// normalization, Delphi keeps its stock RTL behavior.
 //
 // Only VType <= varNull (varEmpty/varNull) is touched - a real numeric 0 or an
 // empty string is left as is, so no existing behavior changes.
@@ -109,13 +115,17 @@ begin
   end
   else result := e2^;
 end;
+{$EndIf}
 
 //==============================================================
 procedure C01(env: CEnv; e1, e2: PValue);
 {$IfDef CalcOpt}
   procedure _C01;
+{$IfDef FPC}
   var t: CValue;
+{$EndIf}
   begin
+{$IfDef FPC}
     if (PData(e1)^.VType <= varNull) or (PData(e2)^.VType <= varNull) then
     begin
       _NullAddE1(e1, e2);
@@ -124,6 +134,9 @@ procedure C01(env: CEnv; e1, e2: PValue);
     end
     else
       e1^ := e1^ + e2^; // +
+{$Else}
+    e1^ := e1^ + e2^; // +
+{$EndIf}
   end;
 
 var i: fun.int; j: fun.dword;
@@ -179,6 +192,7 @@ begin
 
   _: _C01;
 {$Else}
+{$IfDef FPC}
 var t: CValue;
 begin
   if (PData(e1)^.VType <= varNull) or (PData(e2)^.VType <= varNull) then
@@ -189,14 +203,21 @@ begin
   end
   else
     e1^ := e1^ + e2^; // +
+{$Else}
+begin
+  e1^ := e1^ + e2^; // +
+{$EndIf}
 {$EndIf}
 end;
 
 procedure C02(env: CEnv; e1, e2: PValue);
 {$IfDef CalcOpt}
   procedure _C02;
+{$IfDef FPC}
   var t: CValue;
+{$EndIf}
   begin
+{$IfDef FPC}
     if (PData(e1)^.VType <= varNull) or (PData(e2)^.VType <= varNull) then
     begin
       _NullNumE1(e1);
@@ -205,6 +226,9 @@ procedure C02(env: CEnv; e1, e2: PValue);
     end
     else
       e1^ := e1^ - e2^; // -
+{$Else}
+    e1^ := e1^ - e2^; // -
+{$EndIf}
   end;
 
 var i: fun.int;
@@ -251,6 +275,7 @@ begin
 
   _: _C02;
 {$Else}
+{$IfDef FPC}
 var t: CValue;
 begin
   if (PData(e1)^.VType <= varNull) or (PData(e2)^.VType <= varNull) then
@@ -261,14 +286,21 @@ begin
   end
   else
     e1^ := e1^ - e2^; // -
+{$Else}
+begin
+  e1^ := e1^ - e2^; // -
+{$EndIf}
 {$EndIf}
 end;
 
 procedure C03(env: CEnv; e1, e2: PValue);
 {$IfDef CalcOpt}
   procedure _C03;
+{$IfDef FPC}
   var t: CValue;
+{$EndIf}
   begin
+{$IfDef FPC}
     if (PData(e1)^.VType <= varNull) or (PData(e2)^.VType <= varNull) then
     begin
       _NullNumE1(e1);
@@ -277,6 +309,9 @@ procedure C03(env: CEnv; e1, e2: PValue);
     end
     else
       e1^ := e1^ * e2^; // *
+{$Else}
+    e1^ := e1^ * e2^; // *
+{$EndIf}
   end;
 
 var i: fun.int;
@@ -323,6 +358,7 @@ begin
 
   _: _C03;
 {$Else}
+{$IfDef FPC}
 var t: CValue;
 begin
   if (PData(e1)^.VType <= varNull) or (PData(e2)^.VType <= varNull) then
@@ -333,14 +369,21 @@ begin
   end
   else
     e1^ := e1^ * e2^; // *
+{$Else}
+begin
+  e1^ := e1^ * e2^; // *
+{$EndIf}
 {$EndIf}
 end;
 
 procedure C04(env: CEnv; e1, e2: PValue);
 {$IfDef CalcOpt}
   procedure _C04;
+{$IfDef FPC}
   var t: CValue;
+{$EndIf}
   begin
+{$IfDef FPC}
     if (PData(e1)^.VType <= varNull) or (PData(e2)^.VType <= varNull) then
     begin
       _NullNumE1(e1);
@@ -349,6 +392,9 @@ procedure C04(env: CEnv; e1, e2: PValue);
     end
     else
       e1^ := e1^ / e2^; // /
+{$Else}
+    e1^ := e1^ / e2^; // /
+{$EndIf}
   end;
 
 //var i: fun.int;
@@ -397,6 +443,7 @@ begin
 
   _: _C04;
 {$Else}
+{$IfDef FPC}
 var t: CValue;
 begin
   if (PData(e1)^.VType <= varNull) or (PData(e2)^.VType <= varNull) then
@@ -407,14 +454,21 @@ begin
   end
   else
     e1^ := e1^ / e2^; // /
+{$Else}
+begin
+  e1^ := e1^ / e2^; // /
+{$EndIf}
 {$EndIf}
 end;
 
 procedure C05(env: CEnv; e1, e2: PValue);
 {$IfDef CalcOpt}
   procedure _C05;
+{$IfDef FPC}
   var t: CValue;
+{$EndIf}
   begin
+{$IfDef FPC}
     if (PData(e1)^.VType <= varNull) or (PData(e2)^.VType <= varNull) then
     begin
       _NullNumE1(e1);
@@ -423,6 +477,9 @@ procedure C05(env: CEnv; e1, e2: PValue);
     end
     else
       e1^ := e1^ div e2^; // d
+{$Else}
+    e1^ := e1^ div e2^; // d
+{$EndIf}
   end;
 
 var i: fun.int;
@@ -469,6 +526,7 @@ begin
 
   _: _C05;
 {$Else}
+{$IfDef FPC}
 var t: CValue;
 begin
   if (PData(e1)^.VType <= varNull) or (PData(e2)^.VType <= varNull) then
@@ -479,14 +537,21 @@ begin
   end
   else
     e1^ := e1^ div e2^; // d
+{$Else}
+begin
+  e1^ := e1^ div e2^; // d
+{$EndIf}
 {$EndIf}
 end;
 
 procedure C06(env: CEnv; e1, e2: PValue);
 {$IfDef CalcOpt}
   procedure _C06;
+{$IfDef FPC}
   var t: CValue;
+{$EndIf}
   begin
+{$IfDef FPC}
     if (PData(e1)^.VType <= varNull) or (PData(e2)^.VType <= varNull) then
     begin
       _NullNumE1(e1);
@@ -495,6 +560,9 @@ procedure C06(env: CEnv; e1, e2: PValue);
     end
     else
       e1^ := e1^ mod e2^; // m
+{$Else}
+    e1^ := e1^ mod e2^; // m
+{$EndIf}
   end;
 
 var i: fun.int;
@@ -541,6 +609,7 @@ begin
 
   _: _C06;
 {$Else}
+{$IfDef FPC}
 var t: CValue;
 begin
   if (PData(e1)^.VType <= varNull) or (PData(e2)^.VType <= varNull) then
@@ -551,6 +620,10 @@ begin
   end
   else
     e1^ := e1^ mod e2^; // m
+{$Else}
+begin
+  e1^ := e1^ mod e2^; // m
+{$EndIf}
 {$EndIf}
 end;
 
