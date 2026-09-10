@@ -255,10 +255,10 @@ end;
 
 // Pointer-width read of a numeric value. Unlike 'fun.int(val^)' (32-bit, truncates
 // addresses on 64-bit targets), this converts through Int64 so a full-width address
-// survives; on 32-bit targets Int64 -> PtrUInt -> ptr is still exactly 32 bits.
+// survives; on 32-bit targets Int64 -> uintptr -> ptr is still exactly 32 bits.
 function asPtr(val: PValue): fun.ptr;
 begin
-  result := fun.ptr(PtrUInt(Int64(val^)));
+  result := fun.ptr(fun.uintptr(Int64(val^)));
 end;
 
 // On 64-bit targets pointers are wider than fun.int, so raw-memory builtins
@@ -281,12 +281,12 @@ begin
 {$IfDef FunPtrWide}
   with PData(val)^ do
     if isStr(VType) or (VType = varInt64) then
-      result := fun.ptr(PtrUInt(VPointer))
+      result := fun.ptr(fun.uintptr(VPointer))
     else
-      result := fun.ptr(PtrUInt(VInteger))
+      result := fun.ptr(fun.uintptr(VInteger))
   ;
 {$Else}
-  result := fun.ptr(PtrUInt(PData(val)^.VInteger));
+  result := fun.ptr(fun.uintptr(PData(val)^.VInteger));
 {$EndIf}
 end;
 

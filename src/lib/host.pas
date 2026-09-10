@@ -232,13 +232,13 @@ constructor CLfun.Create;
 begin
   inherited Create;
   {$IfDef WinCOM}
-  ids['@toEvent'] := CExp.new(nil).parse(Int64(PtrUInt(@_toEvent)));
+  ids['@toEvent'] := CExp.new(nil).parse(Int64(fun.uintptr(@_toEvent)));
   {$EndIf}
   {$IfDef WinAPI}
-  ids['@toCallback'] := CExp.new(nil).parse(Int64(PtrUInt(@_toCallback)));
+  ids['@toCallback'] := CExp.new(nil).parse(Int64(fun.uintptr(@_toCallback)));
   {$EndIf}
   {$IfDef LinuxFFI}
-  ids['@toCallback'] := CExp.new(nil).parse(Int64(PtrUInt(@_ltoCallback)));
+  ids['@toCallback'] := CExp.new(nil).parse(Int64(fun.uintptr(@_ltoCallback)));
   {$EndIf}
 end;
 

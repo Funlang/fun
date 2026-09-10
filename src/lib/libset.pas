@@ -56,9 +56,9 @@ begin
     end
     else if e.asStr = 'ptr' then
     begin
-      // PtrInt/PtrUInt are pointer-wide (32-bit on 32-bit targets, 64-bit on 64-bit),
+      // fun.intptr/fun.uintptr are pointer-wide (32-bit on 32-bit targets, 64-bit on 64-bit),
       // so the returned address is not truncated on x86_64/Win64.
-      val^ := PtrInt(l.List);
+      val^ := fun.intptr(l.List);
       exit;
     end;
   end;
@@ -336,7 +336,7 @@ function _asJson(hash: CHash; cs: CSet; lev: fun.int; format: fun.int = 0; json:
   begin
     // Object identity key for cycle detection: use the full pointer, not
     // fun.uint (32-bit), so two live objects cannot collide on x86_64/Win64.
-    s := SysUtils.Format('@%x', [PtrUInt(cs.items)]);
+    s := SysUtils.Format('@%x', [fun.uintptr(cs.items)]);
     if hash.ItemById[s] <> nil then
     begin
       result := '"(Object)"'; //0x' + s + ')"';
@@ -423,12 +423,12 @@ end;
 constructor CLset.Create;
 begin
   inherited Create;
-  ids['@count']  := CExp.new(nil).parse(Int64(PtrUInt(@_count)));
-  ids['@length'] := CExp.new(nil).parse(Int64(PtrUInt(@_count)));
-  ids['@each']   := CExp.new(nil).parse(Int64(PtrUInt(@_each)));
-  ids['@add']    := CExp.new(nil).parse(Int64(PtrUInt(@_add)));
-  ids['@clone']  := CExp.new(nil).parse(Int64(PtrUInt(@_clone)));
-  ids['@toJson'] := CExp.new(nil).parse(Int64(PtrUInt(@_toJson)));
+  ids['@count']  := CExp.new(nil).parse(Int64(fun.uintptr(@_count)));
+  ids['@length'] := CExp.new(nil).parse(Int64(fun.uintptr(@_count)));
+  ids['@each']   := CExp.new(nil).parse(Int64(fun.uintptr(@_each)));
+  ids['@add']    := CExp.new(nil).parse(Int64(fun.uintptr(@_add)));
+  ids['@clone']  := CExp.new(nil).parse(Int64(fun.uintptr(@_clone)));
+  ids['@toJson'] := CExp.new(nil).parse(Int64(fun.uintptr(@_toJson)));
 end;
 
 function CLset.accept(exp: CExp): fun.bool;

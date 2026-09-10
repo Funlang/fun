@@ -203,13 +203,13 @@ begin
         // UTF-16), so wide-string FFI calls fall back to the 's' behaviour.
         begin
           strs[i] := AnsiString(e.asStr);
-          if strs[i] <> '' then slots[i] := QWord(PtrUInt(@strs[i][1]));
+          if strs[i] <> '' then slots[i] := QWord(fun.uintptr(@strs[i][1]));
         end;
       'c': // callback: pass a Fun callback's native entry point
         begin
-          if e.asObj is CFFICallback then slots[i] := QWord(PtrUInt(CFFICallback(e.asObj).Proc))
+          if e.asObj is CFFICallback then slots[i] := QWord(fun.uintptr(CFFICallback(e.asObj).Proc))
           else if isNum(e.value, true) then slots[i] := QWord(e.value^)
-          else if e.asObj <> nil then slots[i] := QWord(PtrUInt(e.asObj));
+          else if e.asObj <> nil then slots[i] := QWord(fun.uintptr(e.asObj));
         end;
       'f': // single (float32) argument (SSE)
         begin
@@ -226,16 +226,16 @@ begin
       'n', 'i', 'l':
         begin
           if isNum(e.value) then slots[i] := QWord(e.value^)
-          else if e.asObj <> nil then slots[i] := QWord(PtrUInt(e.asObj));
+          else if e.asObj <> nil then slots[i] := QWord(fun.uintptr(e.asObj));
         end;
       'p':
         begin
           if isStr(e.value) then
-            slots[i] := QWord(PtrUInt(Pointer(AnsiString(e.asStr))))
+            slots[i] := QWord(fun.uintptr(Pointer(AnsiString(e.asStr))))
           else if isNum(e.value) then
             slots[i] := QWord(e.value^)
           else if e.asObj <> nil then
-            slots[i] := QWord(PtrUInt(e.asObj));
+            slots[i] := QWord(fun.uintptr(e.asObj));
         end;
       else // 'v', 'c' -> 0
         slots[i] := 0;
@@ -260,12 +260,12 @@ begin
   case rt of
     'f': p_val^ := PSingle(@ret)^;
     'd': p_val^ := PDouble(@ret)^;
-    's', 'a', 'w': p_val^ := fun.str(PAnsiChar(PtrUInt(ret)));
+    's', 'a', 'w': p_val^ := fun.str(PAnsiChar(fun.uintptr(ret)));
     'i'     : p_val^ := fun.int(LongInt(ret));      // C int (low 32 bits / eax)
     'l', 'n': p_val^ := Int64(ret);                 // C long / 64-bit number
     'v'     : p_val^ := NullValue;
-  // 'p': Int64, not PtrUInt. On non-Unicode builds isNum() does not accept
-  // varUInt64, so a PtrUInt result could not be fed back into another FFI
+  // 'p': Int64, not fun.uintptr. On non-Unicode builds isNum() does not accept
+  // varUInt64, so an unsigned-64 result could not be fed back into another FFI
   // call (it silently passed 0). Int64 keeps the full 64-bit value and is
   // the same convention used for @toCallback(ptr: true) addresses.
   else     p_val^ := Int64(ret);                   // 'p' / default
@@ -288,7 +288,7 @@ begin
   c := CFFICallback.Create.Parse(exp, exps, env);
   e := CExps.Find(exps, 'ptr', 2);
   if (e <> nil) and e.asBool then
-    val^ := Int64(PtrUInt(c.Proc)) // raw address escape hatch; object stays alive
+    val^ := Int64(fun.uintptr(c.Proc)) // raw address escape hatch; object stays alive
   else
   begin
     setObj(val, c, VarObjNew); del(c);
@@ -395,7 +395,7 @@ begin
         'f': e.assign(PSingle(args[i])^);
         'd': e.assign(PDouble(args[i])^);
         'w', 's', 'a': e.assign(fun.str(PAnsiChar(PPointer(args[i])^)));
-        'c', 'p': e.assign(Int64(PtrUInt(PPointer(args[i])^)));
+        'c', 'p': e.assign(Int64(fun.uintptr(PPointer(args[i])^)));
       else e.assign(0);
       end;
     end;
@@ -415,7 +415,7 @@ begin
         else PInt64(resp)^ := 0;
       'f': PSingle(resp)^ := Double(rv^); // auto-converts to Single
       'd': PDouble(resp)^ := Double(rv^);
-      'p', 'c': PPointer(resp)^ := Pointer(PtrUInt(Double(rv^)));
+      'p', 'c': PPointer(resp)^ := Pointer(fun.uintptr(Double(rv^)));
       's', 'a':
         begin
           FStr := fun.str(rv^); // keep the returned string alive

@@ -265,9 +265,9 @@ end;
 constructor CLform.Create;
 begin
   inherited Create;
-  ids['show'] := CExp.new(nil).parse(Int64(PtrUInt(@_show)));
-  ids['hwnd'] := CExp.new(nil).parse(Int64(PtrUInt(@_hwnd)));
-  ids['html'] := CExp.new(nil).parse(Int64(PtrUInt(@_html)));
+  ids['show'] := CExp.new(nil).parse(Int64(fun.uintptr(@_show)));
+  ids['hwnd'] := CExp.new(nil).parse(Int64(fun.uintptr(@_hwnd)));
+  ids['html'] := CExp.new(nil).parse(Int64(fun.uintptr(@_html)));
   {$IfDef IDE}
     OnMsging := false;
   {$EndIf}
@@ -314,10 +314,10 @@ end;
 constructor CLui.Create;
 begin
   inherited Create;
-  ids['form']   := CExp.new(nil).parse(Int64(PtrUInt(@_form)));
-  ids['run']    := CExp.new(nil).parse(Int64(PtrUInt(@_run)));
-  ids['delay']  := CExp.new(nil).parse(Int64(PtrUInt(@_delay)));
-  ids['dialog'] := CExp.new(nil).parse(Int64(PtrUInt(@_dialog)));
+  ids['form']   := CExp.new(nil).parse(Int64(fun.uintptr(@_form)));
+  ids['run']    := CExp.new(nil).parse(Int64(fun.uintptr(@_run)));
+  ids['delay']  := CExp.new(nil).parse(Int64(fun.uintptr(@_delay)));
+  ids['dialog'] := CExp.new(nil).parse(Int64(fun.uintptr(@_dialog)));
 end;
 
 function CLui.accept(exp: CExp): fun.bool;

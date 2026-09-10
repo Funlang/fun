@@ -47,6 +47,24 @@ type
 
   ptr    = Pointer;
 
+  // Pointer-wide integers, in both signed and unsigned flavors. Compiler
+  // specific pointer-sized types (PtrInt/PtrUInt/NativeInt/NativeUInt/...)
+  // are kept out of every other unit; platform selection lives here (and in
+  // base.pas). On 64-bit targets these are 64-bit, so code addresses survive
+  // the value model's Int64 storage.
+  {$IfDef CPU64}
+  intptr  = int64;
+  uintptr = QWord;
+  {$Else}
+    {$IfDef CPUX64}
+    intptr  = int64;
+    uintptr = QWord;
+    {$Else}
+    intptr  = int32;
+    uintptr = uint32;
+    {$EndIf}
+  {$EndIf}
+
 const
   {$IfDef FPC}
   VarObject = $201;//VarError;

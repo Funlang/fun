@@ -708,7 +708,7 @@ begin
     raise EBase.Create('out of bounds');
 
   ps := @s[1 + pos];
-  pd := fun.ptr(PtrUInt(rawPtr(ed.value)) + PtrUInt(pod));
+  pd := fun.ptr(fun.uintptr(rawPtr(ed.value)) + fun.uintptr(pod));
   Move(ps^, pd^, len * sizeOf(char));
   val^ := len;
 end;
@@ -780,7 +780,7 @@ begin
   begin
     s := exp.asStr();
     if p = -1 then
-      val^ := PtrInt(rawPtr(exp.value))
+      val^ := fun.intptr(rawPtr(exp.value))
     else if p = 1 then
     begin
       i := @s[1];
@@ -1197,43 +1197,43 @@ constructor CLbase.Create;
 begin
   inherited Create;
   // Easter egg
-  ids['@uthor']  := CExp.new(nil).parse(Int64(PtrUInt(@_author)));
+  ids['@uthor']  := CExp.new(nil).parse(Int64(fun.uintptr(@_author)));
   
   // Arg or param
-  ids['arg']     := CExp.new(nil).parse(Int64(PtrUInt(@_arg)));
-  ids['set']     := CExp.new(nil).parse(Int64(PtrUInt(@_set)));
+  ids['arg']     := CExp.new(nil).parse(Int64(fun.uintptr(@_arg)));
+  ids['set']     := CExp.new(nil).parse(Int64(fun.uintptr(@_set)));
   
   // Math
-  ids['exp']     := CExp.new(nil).parse(Int64(PtrUInt(@_exp)));
-  ids['log']     := CExp.new(nil).parse(Int64(PtrUInt(@_log)));
-  ids['sin']     := CExp.new(nil).parse(Int64(PtrUInt(@_sin)));
-  ids['cos']     := CExp.new(nil).parse(Int64(PtrUInt(@_cos)));
-  ids['atan']    := CExp.new(nil).parse(Int64(PtrUInt(@_atan)));
-  ids['random']  := CExp.new(nil).parse(Int64(PtrUInt(@_random)));
+  ids['exp']     := CExp.new(nil).parse(Int64(fun.uintptr(@_exp)));
+  ids['log']     := CExp.new(nil).parse(Int64(fun.uintptr(@_log)));
+  ids['sin']     := CExp.new(nil).parse(Int64(fun.uintptr(@_sin)));
+  ids['cos']     := CExp.new(nil).parse(Int64(fun.uintptr(@_cos)));
+  ids['atan']    := CExp.new(nil).parse(Int64(fun.uintptr(@_atan)));
+  ids['random']  := CExp.new(nil).parse(Int64(fun.uintptr(@_random)));
   
   // String
-  ids['length']  := CExp.new(nil).parse(Int64(PtrUInt(@_length)));
-  ids['lower']   := CExp.new(nil).parse(Int64(PtrUInt(@_lower)));
-  ids['upper']   := CExp.new(nil).parse(Int64(PtrUInt(@_upper)));
-  ids['subpos']  := CExp.new(nil).parse(Int64(PtrUInt(@_subpos)));
-  ids['substr']  := CExp.new(nil).parse(Int64(PtrUInt(@_substr)));
-  ids['x']       := CExp.new(nil).parse(Int64(PtrUInt(@_x)));
-  ids['movs']    := CExp.new(nil).parse(Int64(PtrUInt(@_movs)));
-  ids['escape']  := CExp.new(nil).parse(Int64(PtrUInt(@_escape)));
-  ids['format']  := CExp.new(nil).parse(Int64(PtrUInt(@_format)));
-  ids['eval']    := CExp.new(nil).parse(Int64(PtrUInt(@_eval)));
+  ids['length']  := CExp.new(nil).parse(Int64(fun.uintptr(@_length)));
+  ids['lower']   := CExp.new(nil).parse(Int64(fun.uintptr(@_lower)));
+  ids['upper']   := CExp.new(nil).parse(Int64(fun.uintptr(@_upper)));
+  ids['subpos']  := CExp.new(nil).parse(Int64(fun.uintptr(@_subpos)));
+  ids['substr']  := CExp.new(nil).parse(Int64(fun.uintptr(@_substr)));
+  ids['x']       := CExp.new(nil).parse(Int64(fun.uintptr(@_x)));
+  ids['movs']    := CExp.new(nil).parse(Int64(fun.uintptr(@_movs)));
+  ids['escape']  := CExp.new(nil).parse(Int64(fun.uintptr(@_escape)));
+  ids['format']  := CExp.new(nil).parse(Int64(fun.uintptr(@_format)));
+  ids['eval']    := CExp.new(nil).parse(Int64(fun.uintptr(@_eval)));
   
   // Time
-  ids['time']    := CExp.new(nil).parse(Int64(PtrUInt(@_time)));
+  ids['time']    := CExp.new(nil).parse(Int64(fun.uintptr(@_time)));
   
   // File
-  ids['hash']    := CExp.new(nil).parse(Int64(PtrUInt(@_hash)));
-  ids['load']    := CExp.new(nil).parse(Int64(PtrUInt(@_load)));
-  ids['save']    := CExp.new(nil).parse(Int64(PtrUInt(@_save)));
-  ids['find']    := CExp.new(nil).parse(Int64(PtrUInt(@_find)));
-  ids['copy']    := CExp.new(nil).parse(Int64(PtrUInt(@_copy)));
-  ids['move']    := CExp.new(nil).parse(Int64(PtrUInt(@_move)));
-  ids['size']    := CExp.new(nil).parse(Int64(PtrUInt(@_size)));
+  ids['hash']    := CExp.new(nil).parse(Int64(fun.uintptr(@_hash)));
+  ids['load']    := CExp.new(nil).parse(Int64(fun.uintptr(@_load)));
+  ids['save']    := CExp.new(nil).parse(Int64(fun.uintptr(@_save)));
+  ids['find']    := CExp.new(nil).parse(Int64(fun.uintptr(@_find)));
+  ids['copy']    := CExp.new(nil).parse(Int64(fun.uintptr(@_copy)));
+  ids['move']    := CExp.new(nil).parse(Int64(fun.uintptr(@_move)));
+  ids['size']    := CExp.new(nil).parse(Int64(fun.uintptr(@_size)));
   
   // Path
   // in env
@@ -1244,7 +1244,7 @@ begin
   // @toJSON()
   
   // Fun Lib
-  ids['GetLib']  := CExp.new(nil).parse(Int64(PtrUInt(@_getlib)));
+  ids['GetLib']  := CExp.new(nil).parse(Int64(fun.uintptr(@_getlib)));
   
   // Win API
   {$IfDef WinAPI}
@@ -1253,12 +1253,12 @@ begin
   //   name -> method name or address
   //   type -> xxx...:x
   // getfun? getmethod?
-  ids['GetApi']  := CExp.new(nil).parse(Int64(PtrUInt(@_getapi)));
+  ids['GetApi']  := CExp.new(nil).parse(Int64(fun.uintptr(@_getapi)));
   {$EndIf}
   
   // Linux: dlopen/dlsym via libffi (winapi unit stays Windows-only)
   {$IfDef LinuxFFI}
-  ids['GetApi']  := CExp.new(nil).parse(Int64(PtrUInt(@_lgetapi)));
+  ids['GetApi']  := CExp.new(nil).parse(Int64(fun.uintptr(@_lgetapi)));
   {$EndIf}
 
   // Win COM
@@ -1266,18 +1266,18 @@ begin
   // c.newobj(get = false)
   //   c -> class name or guid
   // newole? newobject?
-  ids['NewObj']  := CExp.new(nil).parse(Int64(PtrUInt(@_newobj)));
+  ids['NewObj']  := CExp.new(nil).parse(Int64(fun.uintptr(@_newobj)));
   {$EndIf}
   
   // Type conversions
-  ids['toStr']   := CExp.new(nil).parse(Int64(PtrUInt(@_toStr)));
-  ids['toNum']   := CExp.new(nil).parse(Int64(PtrUInt(@_toNum)));
-  ids['toTime']  := CExp.new(nil).parse(Int64(PtrUInt(@_toTime)));
-  ids['toByte']  := CExp.new(nil).parse(Int64(PtrUInt(@_toByte)));
-  ids['fromByte']:= CExp.new(nil).parse(Int64(PtrUInt(@_fromByte)));
-  ids['toChar']  := CExp.new(nil).parse(Int64(PtrUInt(@_toChar)));
+  ids['toStr']   := CExp.new(nil).parse(Int64(fun.uintptr(@_toStr)));
+  ids['toNum']   := CExp.new(nil).parse(Int64(fun.uintptr(@_toNum)));
+  ids['toTime']  := CExp.new(nil).parse(Int64(fun.uintptr(@_toTime)));
+  ids['toByte']  := CExp.new(nil).parse(Int64(fun.uintptr(@_toByte)));
+  ids['fromByte']:= CExp.new(nil).parse(Int64(fun.uintptr(@_fromByte)));
+  ids['toChar']  := CExp.new(nil).parse(Int64(fun.uintptr(@_toChar)));
   // toRegex
-  ids['toRegex'] := CExp.new(nil).parse(Int64(PtrUInt(@_toRegex)));
+  ids['toRegex'] := CExp.new(nil).parse(Int64(fun.uintptr(@_toRegex)));
   
   // Regex
   // match
@@ -1292,10 +1292,10 @@ begin
   //            .@next(): match next
   //            .@value(), @matched(): [0]
   //            .@missed(): un-matched
-  ids['match']   := CExp.new(nil).parse(Int64(PtrUInt(@_match)));
+  ids['match']   := CExp.new(nil).parse(Int64(fun.uintptr(@_match)));
   // replace
   // s.replace(r, s2) and r.replace(s, s2)
-  ids['replace'] := CExp.new(nil).parse(Int64(PtrUInt(@_replace)));
+  ids['replace'] := CExp.new(nil).parse(Int64(fun.uintptr(@_replace)));
   
   // Parse ...
   // parseAsJSON
@@ -1304,12 +1304,12 @@ begin
   // parseAsXML, 这个可以作为正则用 fun 来做
   // parseAsINI, 这个可以作为正则用 fun 来做
   // ...
-  ids['compile'] := CExp.new(nil).parse(Int64(PtrUInt(@_compile)));
-  ids['GetJson'] := CExp.new(nil).parse(Int64(PtrUInt(@_GetJson)));
+  ids['compile'] := CExp.new(nil).parse(Int64(fun.uintptr(@_compile)));
+  ids['GetJson'] := CExp.new(nil).parse(Int64(fun.uintptr(@_GetJson)));
   
   {$IfDef MD5}
-  ids['md5']     := CExp.new(nil).parse(Int64(PtrUInt(@_md5)));
-  ids['sha1']    := CExp.new(nil).parse(Int64(PtrUInt(@_sha1)));
+  ids['md5']     := CExp.new(nil).parse(Int64(fun.uintptr(@_md5)));
+  ids['sha1']    := CExp.new(nil).parse(Int64(fun.uintptr(@_sha1)));
   {$EndIf}
 end;
 

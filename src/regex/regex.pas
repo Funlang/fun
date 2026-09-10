@@ -357,8 +357,8 @@ end;
 constructor CLreg.Create;
 begin
   inherited Create;
-  ids['match']   := CExp.new(nil).parse(Int64(PtrUInt(@_match)));
-  ids['replace'] := CExp.new(nil).parse(Int64(PtrUInt(@_replace)));
+  ids['match']   := CExp.new(nil).parse(Int64(fun.uintptr(@_match)));
+  ids['replace'] := CExp.new(nil).parse(Int64(fun.uintptr(@_replace)));
 end;
 
 function CLreg.accept(exp: CExp): fun.bool;
@@ -370,14 +370,14 @@ end;
 constructor CLmat.Create;
 begin
   inherited Create;
-  ids['match']  := CExp.new(nil).parse(Int64(PtrUInt(@_next)));
-  ids['missed'] := CExp.new(nil).parse(Int64(PtrUInt(@_missed)));
-  ids['value']  := CExp.new(nil).parse(Int64(PtrUInt(@_value)));
-  ids['rest']   := CExp.new(nil).parse(Int64(PtrUInt(@_rest)));
-  ids['gcount'] := CExp.new(nil).parse(Int64(PtrUInt(@_gcount)));
-  ids['groups'] := CExp.new(nil).parse(Int64(PtrUInt(@_groups)));
-  ids['@@']     := CExp.new(nil).parse(Int64(PtrUInt(@_value)));
-  ids['@']      := CExp.new(nil).parse(Int64(PtrUInt(@_groups)));
+  ids['match']  := CExp.new(nil).parse(Int64(fun.uintptr(@_next)));
+  ids['missed'] := CExp.new(nil).parse(Int64(fun.uintptr(@_missed)));
+  ids['value']  := CExp.new(nil).parse(Int64(fun.uintptr(@_value)));
+  ids['rest']   := CExp.new(nil).parse(Int64(fun.uintptr(@_rest)));
+  ids['gcount'] := CExp.new(nil).parse(Int64(fun.uintptr(@_gcount)));
+  ids['groups'] := CExp.new(nil).parse(Int64(fun.uintptr(@_groups)));
+  ids['@@']     := CExp.new(nil).parse(Int64(fun.uintptr(@_value)));
+  ids['@']      := CExp.new(nil).parse(Int64(fun.uintptr(@_groups)));
 end;
 
 function CLmat.accept(exp: CExp): fun.bool;
