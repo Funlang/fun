@@ -30,11 +30,7 @@ class CBNF(rls, name, dup, ws)
         if not dup and count[n] > 0 then
           nn &= '_' & count[n];
         end if;
-        // NOTE: Fun's 'nil += 1' stays nil, so a plain 'count[n] += 1' never
-        // counts past the first hit and the _k renaming below never happens
-        // (that made every dup:0 pattern fail with "two named subpatterns
-        // have the same name"). Seed it explicitly.
-        count[n] = (count[n] or 0) + 1;
+        count[n] += 1;
         ns[nn] = 1;
         if rls[n] = nil then
           ?. 'EBNF: $n not found'.eval();

@@ -29,9 +29,7 @@ var OrmSave(db, args) = OrmModify(db, args, (db, oschema, ovalue, ret) {
     if '' & r[0].autoId <> '' then
       ret.autoId = r[0].autoId;
     end if;
-    // 'nil += n' stays nil in Fun: seed the counter, otherwise the affected-row
-    // count is silently dropped (it used to be nil in every orm-pro result).
-    ret.rows = (ret.rows or 0) + (r[0].rows or 0);
+    ret.rows += r[0].rows;
   end do;
 });
 
@@ -39,19 +37,19 @@ var OrmUpdate(db, args) = OrmModify(db, args, (db, oschema, ovalue, ret) {
   var DO = DObject(db, oschema);
   DO.props = ovalue.Set;
   var r = DO.Update(ovalue.Where);
-  ret.rows = (ret.rows or 0) + (r[0].rows or 0);
+  ret.rows += r[0].rows;
 });
 
 var OrmDelete(db, args) = OrmModify(db, args, (db, oschema, ovalue, ret) {
   var DO = DObject(db, oschema);
   var r = DO.Delete(ovalue);
-  ret.rows = (ret.rows or 0) + (r[0].rows or 0);
+  ret.rows += r[0].rows;
 });
 
 var OrmCreate(db, args) = OrmModify(db, args, (db, oschema, ovalue, ret) {
   var DO = DObject(db, oschema);
   var r = DO.Create();
-  ret.rows = (ret.rows or 0) + (r[0].rows or 0);
+  ret.rows += r[0].rows;
 });
 
 fun OrmModify(db, args, f)
