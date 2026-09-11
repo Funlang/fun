@@ -1,7 +1,14 @@
 // Copyright (c) 2010-2026 Zhang Weidong <zwd@funlang.org>
 // SPDX-License-Identifier: MIT
 
+// Tiny C Compiler backend, resolved by name at load time. Windows ships
+// libtcc.dll next to fun.exe; on Linux the build produces libtcc.so from
+// src/3rd/tcc and places it next to funcmd, and funcmd is linked with
+// -rpath $ORIGIN so the bare name resolves (see art/notes/library-port-plan.md).
 var tccdll = 'libtcc.dll';
+if 'host'.arg().getJson(fd: true).os = 'linux' then
+  tccdll = 'libtcc.so';
+end if;
 var tcc = nil;
 var tcc_error = nil;
 try

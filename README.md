@@ -158,11 +158,11 @@ What makes Fun unusual is how far a script can go without a separate toolchain:
 | ------------ | --------------------------------- | ------------------------------------------------ |
 | High-level   | JSON / FD data, list / set / tree | native collections and parsers                  |
 | Native calls | `dll.getapi(name, 'signature')`   | FFI with a compact signature convention         |
-| C at runtime | `ccompile(code, ...)`             | bundled Tiny C Compiler (`libtcc.dll`)          |
+| C at runtime | `ccompile(code, ...)`             | bundled Tiny C Compiler (`libtcc.dll`/`.so`)    |
 | JIT          | `NewJit(...)`                     | dispatch between C (TCC) and assembly           |
 | Machine code | `Assembly(code, ...).Load()`      | inline assembly, executable memory allocation   |
 
-For example, `lib-tcc` loads `libtcc.dll` and exposes `tcc_new`, `tcc_compile_string`, `tcc_get_symbol`, ... so you can compile C source from a string and call the resulting symbol immediately. `lib-asm` allocates executable memory, writes machine code, and invokes it; `lib-jit` picks the right path based on the source (`#!c` → TCC, otherwise assembly).
+For example, `lib-tcc` loads `libtcc.dll` on Windows (and `libtcc.so` on Linux) and exposes `tcc_new`, `tcc_compile_string`, `tcc_get_symbol`, ... so you can compile C source from a string and call the resulting symbol immediately. `lib-asm` allocates executable memory, writes machine code, and invokes it; `lib-jit` picks the right path based on the source (`#!c` → TCC, otherwise assembly).
 
 A single script can mix both: `NewJit` compiles C **and** inline assembly at runtime, and each can call straight back into a Fun function (`@toCallback`). The snippet below sums `1..n` — once via assembly, once via compiled C — and hands the result to a Fun callback both times (full version: [`test-jit-cb.fun`](fun/demos/benchmarks/test-jit-cb.fun)):
 

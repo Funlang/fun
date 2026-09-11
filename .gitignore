@@ -61,6 +61,9 @@ src/parse/bnf/yacc.lst
 # Vendored PCRE C source uploaded under src/3rd (build from source; not tracked)
 src/3rd/pcre-8/
 
+# Vendored Tiny C Compiler source (builds libtcc.so for lib-tcc.fun; not tracked)
+src/3rd/tcc/
+
 # ---- OS ----
 .DS_Store
 Thumbs.db

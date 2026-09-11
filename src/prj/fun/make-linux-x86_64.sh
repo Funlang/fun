@@ -10,10 +10,17 @@
 # "-dRegexx" used by the .bat scripts is a no-op typo). If the PCRE C
 # source is not present, the build falls back to regex-disabled.
 #
+# It also builds the bundled Tiny C Compiler as libtcc.so from the vendored
+# source under src/3rd/tcc (same version as the shipped Windows libtcc.dll,
+# 0.9.27), drops it next to funcmd and links -rpath $ORIGIN so lib-tcc.fun's
+# bare 'libtcc.so' resolves - the Linux counterpart of "DLL next to the .exe".
+# Missing TCC source only disables runtime C compilation (lib-tcc.fun).
+#
 # Usage:
 #   ./make-linux-x86_64.sh            # FPC resolved from PATH
 #   FPC=/path/to/fpc ./make-linux-x86_64.sh
 #   PCRE_SRC=/abs/path/to/pcre ./make-linux-x86_64.sh
+#   TCC_SRC=/abs/path/to/tcc ./make-linux-x86_64.sh
 #
 # Extra FPC switches can be appended, e.g.:
 #   ./make-linux-x86_64.sh -dCalcOpt
@@ -68,6 +75,33 @@ else
     echo "PCRE C source not found - building WITHOUT regex." >&2
 fi
 
+# --- Build bundled TCC (libtcc.so) for Linux ----------------------
+# lib-tcc.fun loads 'libtcc.dll' on Windows and 'libtcc.so' on Linux (see the
+# host probe at the top of that module). We build the shared library from the
+# vendored TCC source (same version as the shipped Windows DLL, 0.9.27), drop
+# it next to funcmd, and link funcmd with -rpath $ORIGIN so the bare soname
+# resolves there - the Linux analogue of Windows' "DLL next to the .exe".
+TCC_SRC="${TCC_SRC:-$(cd "$HERE/../../3rd/tcc" 2>/dev/null && pwd)}"
+TCC_FLAGS=""
+if [ -n "$TCC_SRC" ] && [ -f "$TCC_SRC/libtcc.c" ] && command -v gcc >/dev/null 2>&1; then
+    TCC_LIB="$HERE/libtcc.so"
+    TCC_BUILD="$TCC_SRC/build-linux"
+    if [ ! -f "$TCC_LIB" ] || [ "$TCC_SRC/libtcc.c" -nt "$TCC_LIB" ]; then
+        echo "Building TCC (libtcc.so) from $TCC_SRC"
+        mkdir -p "$TCC_BUILD"
+        # out-of-tree build; configure emits config.h/config.mak + a Makefile
+        if [ ! -f "$TCC_BUILD/config.mak" ]; then
+            ( cd "$TCC_BUILD" && "$TCC_SRC/configure" --extra-cflags="-fPIC" )
+        fi
+        ( cd "$TCC_BUILD" && make libtcc.so ) || { echo "TCC build failed" >&2; exit 1; }
+        cp "$TCC_BUILD/libtcc.so" "$TCC_LIB"
+    fi
+    TCC_FLAGS="-k-rpath -k\$ORIGIN"
+    echo "TCC enabled (libtcc.so next to funcmd, rpath \$ORIGIN)."
+else
+    echo "TCC C source not found - building WITHOUT runtime C compile (lib-tcc.fun needs libtcc.so)." >&2
+fi
+
 # --- Optional FFI: Fun getapi() on Linux via FPC's bundled libffi unit ---
 FFI_FLAGS=""
 FFI_PPU="$(find "$(dirname "$FPC_BINDIR")/lib" -type d -name libffi 2>/dev/null | head -n 1)"
@@ -94,4 +128,4 @@ fi
 # --- Build funcmd ------------------------------------------------
 echo "Building funcmd with $FPC_BIN"
 # shellcheck disable=SC2086
-"$FPC_BIN" funcmd.dpr -B -Sd -O2 -Xs -XX -CX -Tlinux -dLinux $PCRE_FLAGS $FFI_FLAGS "$@"
+"$FPC_BIN" funcmd.dpr -B -Sd -O2 -Xs -XX -CX -Tlinux -dLinux $PCRE_FLAGS $TCC_FLAGS $FFI_FLAGS "$@"

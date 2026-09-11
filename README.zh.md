@@ -158,11 +158,11 @@ Fun 的特殊之处在于，一段脚本在无需独立工具链的情况下能�
 | ---------- | --------------------------------- | ------------------------------------------------ |
 | 高层       | JSON / FD 数据，list / set / tree | 原生集合与解析器                                 |
 | 原生调用   | `dll.getapi(name, 'signature')`   | 紧凑签名约定的 FFI                               |
-| 运行时 C   | `ccompile(code, ...)`             | 内置 Tiny C 编译器（`libtcc.dll`）               |
+| 运行时 C   | `ccompile(code, ...)`             | 内置 Tiny C 编译器（`libtcc.dll`/`.so`）          |
 | JIT        | `NewJit(...)`                     | 在 C（TCC）与汇编之间分发                        |
 | 机器码     | `Assembly(code, ...).Load()`      | 内联汇编、可执行内存分配                         |
 
-例如，`lib-tcc` 加载 `libtcc.dll` 并暴露 `tcc_new`、`tcc_compile_string`、`tcc_get_symbol` 等，从而你可以从字符串编译 C 源码并立即调用所得到的符号。`lib-asm` 分配可执行内存、写入机器码并调用之；`lib-jit` 则根据源码形态自动选择路径（`#!c` → TCC，否则走汇编）。
+例如，`lib-tcc` 加载 `libtcc.dll`（Linux 上为 `libtcc.so`）并暴露 `tcc_new`、`tcc_compile_string`、`tcc_get_symbol` 等，从而你可以从字符串编译 C 源码并立即调用所得到的符号。`lib-asm` 分配可执行内存、写入机器码并调用之；`lib-jit` 则根据源码形态自动选择路径（`#!c` → TCC，否则走汇编）。
 
 一段脚本可以同时混合两者：`NewJit` 在运行时编译 C **和**内联汇编，并且两者都能通过 `@toCallback` 直接回调回 Fun 函数。下面的片段对 `1..n` 求和——一次走汇编、一次走编译出的 C，两次都把结果交给 Fun 回调（完整版本见 [`test-jit-cb.fun`](fun/demos/benchmarks/test-jit-cb.fun)）：
 

@@ -279,6 +279,9 @@ end;
 //   arg chars: i(nt32) l(ong64)/n(umber64) f(loat32) d(ouble) s/a(char*) p/c(pointer)
 //   ret chars: same plus v(void). 'w' (wide-string) is accepted on Linux but
 //   degrades to the narrow 's' semantics (wchar_t is 4-byte UTF-32, not UTF-16).
+//   'C' is the Win32 cdecl convention marker; the SysV ABI is always cdecl, so
+//   here it is accepted as an alias for 'i' (callbacks written for the Windows
+//   lffi, such as lib-tcc's tcc_set_error_func, keep their int return).
 //   cdecl (SysV) is always used.
 procedure _ltoCallback(env: CEnv; exp: CExp; exps: CExps; val: PValue);
 var
@@ -346,7 +349,9 @@ begin
     end;
 
   case FRet of
-    'i': rtype := @ffi_type_sint32;
+    // 'C': Win32 cdecl convention marker. SysV is always cdecl, so on Linux it
+    // is the same as 'i' (mirrors Win32, which reads the result from eax).
+    'i', 'C': rtype := @ffi_type_sint32;
     'l', 'n': rtype := @ffi_type_sint64;
     'f': rtype := @ffi_type_float;
     'd': rtype := @ffi_type_double;
@@ -405,7 +410,7 @@ begin
 
     case FRet of
       'v': ; // void
-      'i':
+      'i', 'C': // 'C' = Win32 cdecl marker; return as the 32-bit int Win32 does
         if isFloat(rv) then PLongInt(resp)^ := Trunc(Double(rv^))
         else if isNum(rv) then PLongInt(resp)^ := LongInt(rv^)
         else PLongInt(resp)^ := 0;
