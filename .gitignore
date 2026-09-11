@@ -35,6 +35,10 @@
 *.ddp
 *.res
 
+# dcc32 reads <project>.cfg automatically (the Delphi make-*.bat builds rely on
+# it for their -D defines), so this one is a source file, not an IDE artifact.
+!src/prj/fun/funcmd.cfg
+
 # funcmd.dpr compiles its icon/version resource with {$R *.res}; the build
 # fails outright without it, so this one .res is a source asset, not an artifact.
 !src/prj/fun/funcmd.res
