@@ -302,6 +302,7 @@ Toolchain locations are centralized in one file: [`src/prj/fun/setenv.bat`](src/
 | ---------------------- | ----------------------------------------- | -------------- |
 | Windows 32-bit         | `src/prj/fun/make-2006.bat` / `-2009.bat` | Delphi 2006 / 2009 |
 | Linux (i386)           | `make-linux.bat`                          | FPC 2.4.0      |
+| Linux x86_64 (native)  | `src/prj/fun/make-linux-x86_64.sh`       | FPC + gcc      |
 | Linux / ARM            | `make-arm-linux.bat`                      | FPC cross      |
 | Windows 64-bit         | `make-win64.bat`                          | FPC cross      |
 | Windows CE / ARM       | `make-wince.bat`                          | FPC cross      |
@@ -309,6 +310,22 @@ Toolchain locations are centralized in one file: [`src/prj/fun/setenv.bat`](src/
 Building with `-DFunDll` produces the embeddable runtime `fun.dll`, which exports the `Run` interface. Build artifacts are covered by `.gitignore` and are not versioned.
 
 The full grammar is defined in [`src/parse/bnf/fun.ebnf`](src/parse/bnf/fun.ebnf).
+
+### Third-party dependencies (not carried in the repo)
+
+To keep the repository small and license-clean, the following third-party
+sources/binaries are **not** shipped. If one is missing the build script
+**degrades and prints a notice** instead of failing:
+
+| Component | Where to put it | Where to get it | Who builds it |
+| --------- | --------------- | --------------- | ------------- |
+| PCRE 8 (8-bit) | `src/3rd/pcre-8/` | <https://www.pcre.org/> (8.x source, e.g. 8.45) | Linux: `make-linux-x86_64.sh` compiles it with gcc; Windows (i386): `src/regex/pcre/make.bat` (Borland bcc32 + make, `-Dpcresrc=<path>`) |
+| Tiny C Compiler 0.9.27 | `src/3rd/tcc/` | the tinycc release on savannah/nongnu, or repo.or.cz tag `release_0_9_27` | `make-linux-x86_64.sh` produces `libtcc.so` (placed next to `funcmd`) |
+| Windows runtime DLLs | `fun/libtcc.dll`, `fun/zlib.dll` | official release or build them yourself | no build step; keep them beside `fun.exe` for `ccompile` / `NewJit` |
+
+- Once the directories are in place, `cd src/prj/fun && ./make-linux-x86_64.sh` builds PCRE and TCC automatically.
+- Or point at them explicitly: `PCRE_SRC=/path/to/pcre TCC_SRC=/path/to/tcc ./make-linux-x86_64.sh`.
+- No PCRE -> the build has no regex (`-dRegex` off); no TCC -> no `libtcc.so`, so `lib-tcc` is unavailable. Neither affects the core interpreter.
 
 ---
 
@@ -327,6 +344,11 @@ The standard library in [`fun/lib`](fun/lib) is written in pure Fun (59 modules)
 - **Native / low-level**: `lib-winapi`, `lib-winole`, `lib-tcc` (C compile), `lib-jit`, `lib-asm`, `lib-asm-pro`
 - **UI**: `lib-ui`, `lib-ui-base`, `lib-dialog`, `lib-trayicon`
 - **Concurrency / async**: `lib-async`, `lib-jsasync`, `lib-bind`, `lib-message`
+
+> **Platform-split convention**: the Windows implementation keeps the plain
+> module name, the Linux backend is `<name>-lnx.fun`, and logic shared by both
+> lives in `<name>-base.fun` (not counted above). E.g. `lib-proc` /
+> `lib-proc-lnx`, and `lib-unicode-base` + `lib-unicode` / `lib-unicode-lnx`.
 
 ---
 

@@ -302,6 +302,7 @@ Fun 核心为 Pascal，源码入口为 `src/prj/fun/funcmd.dpr`。
 | ------------------- | -------------------------------------- | ------------- |
 | Windows 32 位       | `src/prj/fun/make-2006.bat` / `-2009.bat` | Delphi 2006 / 2009 |
 | Linux（i386）       | `make-linux.bat`                       | FPC 2.4.0     |
+| Linux x86_64（原生） | `src/prj/fun/make-linux-x86_64.sh`     | FPC（本机）+ gcc |
 | Linux / ARM         | `make-arm-linux.bat`                   | FPC 交叉      |
 | Windows 64 位       | `make-win64.bat`                       | FPC 交叉      |
 | Windows CE / ARM    | `make-wince.bat`                       | FPC 交叉      |
@@ -309,6 +310,20 @@ Fun 核心为 Pascal，源码入口为 `src/prj/fun/funcmd.dpr`。
 以 `-DFunDll` 编译可生成嵌入运行时 `fun.dll`，导出 `Run` 接口。构建产物已由 `.gitignore` 覆盖，不纳入版本控制。
 
 完整文法定义见 [`src/parse/bnf/fun.ebnf`](src/parse/bnf/fun.ebnf)。
+
+### 第三方依赖（仓库未携带）
+
+为控制体积与许可，仓库**不携带**下列第三方源码/二进制。缺失时构建脚本会**降级并打印提示**，不会中断：
+
+| 组件 | 放到哪里 | 从哪里获取 | 由谁构建 |
+| ---- | -------- | ---------- | -------- |
+| PCRE 8（8-bit） | `src/3rd/pcre-8/` | <https://www.pcre.org/>（8.x 源码，如 8.45） | Linux：`make-linux-x86_64.sh` 用 gcc 直接编译；Windows(i386)：`src/regex/pcre/make.bat`（Borland bcc32 + make，可 `-Dpcresrc=<路径>`） |
+| Tiny C Compiler 0.9.27 | `src/3rd/tcc/` | savannah/nongnu 的 tinycc 发行包，或 repo.or.cz 的 `release_0_9_27` tag | `make-linux-x86_64.sh`，产出 `libtcc.so`（放在 `funcmd` 旁） |
+| Windows 运行期 DLL | `fun/libtcc.dll`、`fun/zlib.dll` | 官方发行包或自行构建 | 无需构建；运行时与 `fun.exe` 同目录，供 `ccompile` / `NewJit` 使用 |
+
+- 放好目录后，`cd src/prj/fun && ./make-linux-x86_64.sh` 会自动编译 PCRE 与 TCC。
+- 也可以显式指定路径：`PCRE_SRC=/path/to/pcre TCC_SRC=/path/to/tcc ./make-linux-x86_64.sh`。
+- 缺 PCRE → 构建不带正则（`-dRegex` 关闭）；缺 TCC → 无 `libtcc.so`，`lib-tcc` 不可用。两者都不影响核心解释器。
 
 ---
 
@@ -327,6 +342,10 @@ Fun 核心为 Pascal，源码入口为 `src/prj/fun/funcmd.dpr`。
 - **原生 / 底层**：`lib-winapi`、`lib-winole`、`lib-tcc`（C 编译）、`lib-jit`、`lib-asm`、`lib-asm-pro`
 - **UI**：`lib-ui`、`lib-ui-base`、`lib-dialog`、`lib-trayicon`
 - **并发 / 异步**：`lib-async`、`lib-jsasync`、`lib-bind`、`lib-message`
+
+> **平台拆分惯例**：Windows 实现保留原名，Linux 后端为 `<name>-lnx.fun`，两者共用的逻辑放在
+> `<name>-base.fun`（不计入上面的模块数）。例如 `lib-proc` / `lib-proc-lnx`，
+> 以及 `lib-unicode-base` + `lib-unicode` / `lib-unicode-lnx`。
 
 ---
 
