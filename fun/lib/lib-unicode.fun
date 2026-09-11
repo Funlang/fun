@@ -36,9 +36,10 @@ fun _u8Put(cp)
 end fun;
 
 fun _u8Get(s, i)
-  // Compute into locals first: a parameter-derived builtin call nested directly
-  // inside a list literal is re-evaluated with a stale index on repeat calls
-  // (Fun quirk observed 2026-09-11), which silently corrupted decoding.
+  // `[...]` is the static (compile-time) array literal: its element expressions
+  // are evaluated once and the result is cached, so a plain [s.toByte(i), i]
+  // would freeze on the first call. Compute into locals and build the list with
+  // `new [...]`, which is the dynamic form.
   var c  = s.toByte(i);
   var cp = 0;
   var n  = 1;
@@ -54,7 +55,7 @@ fun _u8Get(s, i)
     cp = 0;
     n  = 4; // 4-byte sequence: outside GBK, dropped
   end if;
-  result = [cp, n];
+  result = new [cp, n];
 end fun;
 
 fun _gbToUtf8(s)
