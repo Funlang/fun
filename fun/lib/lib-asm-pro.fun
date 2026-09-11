@@ -18,9 +18,12 @@ fun AsmsInit()
     //all = SseDecompress(all);
     sse = true;
   else         //?. 'fd';
-    //use ':asm-list.fd' as fd;
-    //all = fd; #
-    raise 'No zlib';
+    // No zlib (Linux, until lib-zlib is ported): use the uncompressed list
+    // that ships beside this module. `use` is compile-time, so both blobs
+    // are embedded on every host; the Windows branch never reaches here
+    // because zlib.dll loads there.
+    use ':asm-list.fd' as fd;
+    all = fd; #
   end if;
   result = all.getJson(fd: true, sse: sse); //?, 'asms'; ?. result.@count();
 end fun;
