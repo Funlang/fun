@@ -35,6 +35,10 @@
 *.ddp
 *.res
 
+# funcmd.dpr compiles its icon/version resource with {$R *.res}; the build
+# fails outright without it, so this one .res is a source asset, not an artifact.
+!src/prj/fun/funcmd.res
+
 # Native Linux console build of funcmd.dpr (no extension, unlike the .exe)
 src/prj/fun/funcmd
 src/prj/fun/.ffi/
@@ -52,6 +56,9 @@ src/parse/bnf/yacc.lst
 *~
 ~*.*
 *.~*
+
+# lib-asm-pro embeds this StdLib table at compile time (not a backup tarball).
+!fun/lib/*.gz
 
 # ---- Prebuilt third-party binaries (build from source instead) ----
 # Uncomment to ignore shipped binaries:
