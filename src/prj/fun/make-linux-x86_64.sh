@@ -5,14 +5,16 @@
 # Counterpart of make-linux.bat (which cross-compiles i386 from a
 # Windows-hosted FPC). This builds a native x86_64-linux interpreter.
 #
-# It also builds the bundled PCRE 8 engine (8-bit) from the vendored C
-# source under src/3rd/pcre-8 and enables regex (-dRegex, one word - the
-# "-dRegexx" used by the .bat scripts is a no-op typo). If the PCRE C
-# source is not present, the build falls back to regex-disabled.
+# It also builds the bundled PCRE 8 engine (8-bit) from the vendored C source
+# under src/3rd/pcre-8 (fetch PCRE 8.x from https://www.pcre.org/) and enables
+# regex (-dRegex, one word - the "-dRegexx" used by the .bat scripts is a
+# no-op typo). If the PCRE C source is not present, the build falls back to
+# regex-disabled.
 #
 # It also builds the bundled Tiny C Compiler as libtcc.so from the vendored
 # source under src/3rd/tcc (same version as the shipped Windows libtcc.dll,
-# 0.9.27), drops it next to funcmd and links -rpath $ORIGIN so lib-tcc.fun's
+# 0.9.27; fetch the tinycc release on savannah/nongnu or repo.or.cz tag
+# release_0_9_27), drops it next to funcmd and links -rpath $ORIGIN so lib-tcc.fun's
 # bare 'libtcc.so' resolves - the Linux counterpart of "DLL next to the .exe".
 # Missing TCC source only disables runtime C compilation (lib-tcc.fun).
 #
