@@ -33,3 +33,5 @@ src/regex/pcre/**    linguist-vendored
 *.png   binary
 *.ico   binary
 *.gz    binary
+# GBK/CP936 codepoint table used by lib-unicode on Linux (2-byte LE entries)
+*.tbl   binary
