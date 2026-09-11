@@ -16,6 +16,10 @@
 # bare 'libtcc.so' resolves - the Linux counterpart of "DLL next to the .exe".
 # Missing TCC source only disables runtime C compilation (lib-tcc.fun).
 #
+# -dMD5 enables the str.md5()/str.sha1() builtins. On Windows those wrap
+# advapi32.dll; on Linux src/libmd5.inc now has a portable branch built on
+# FPC's bundled md5/sha1 units (see the {$IfDef Linux} block there).
+#
 # Usage:
 #   ./make-linux-x86_64.sh            # FPC resolved from PATH
 #   FPC=/path/to/fpc ./make-linux-x86_64.sh
@@ -128,4 +132,4 @@ fi
 # --- Build funcmd ------------------------------------------------
 echo "Building funcmd with $FPC_BIN"
 # shellcheck disable=SC2086
-"$FPC_BIN" funcmd.dpr -B -Sd -O2 -Xs -XX -CX -Tlinux -dLinux $PCRE_FLAGS $TCC_FLAGS $FFI_FLAGS "$@"
+"$FPC_BIN" funcmd.dpr -B -Sd -O2 -Xs -XX -CX -Tlinux -dLinux -dMD5 $PCRE_FLAGS $TCC_FLAGS $FFI_FLAGS "$@"

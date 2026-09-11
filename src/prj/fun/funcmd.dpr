@@ -62,6 +62,9 @@ uses
   ie in '..\..\lib\ui\ie.pas',
   ui in '..\..\lib\ui\ui.pas',
 {$EndIf}
+  {$IfDef MD5}{$IfDef Linux}
+  funhash in '..\..\lib\funhash.pas',
+  {$EndIf}{$EndIf}
   host in '..\..\lib\host.pas',
   utils in '..\..\utils\utils.pas';
 

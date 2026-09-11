@@ -73,6 +73,7 @@ const
 implementation
 
 uses {$IfNDef Linux}Windows,{$Else}DateUtils,{$EndIf}
+     {$IfDef MD5}{$IfDef Linux}funhash,{$EndIf}{$EndIf}
      SysUtils;
 
 {$IfDef WinCE}

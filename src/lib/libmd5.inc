@@ -18,6 +18,23 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
+{$IfDef Linux}
+// Portable MD5/SHA1 from FPC's bundled hash units. The Windows branch below
+// wraps advapi32.dll (MD5Init/A_SHAInit), which does not exist on Linux, so
+// the shared library could not even be linked there. Linux-only: Windows keeps
+// the original implementation unchanged.
+function MD5(const Buffer; Size: LongWord): string;
+begin
+  result := FunMD5(Buffer, Size);
+end;
+
+function SHA(const Buffer; Size: LongWord): string;
+begin
+  result := FunSHA1(Buffer, Size);
+end;
+
+{$Else}
+
 type
   TAdv32MD5 = object
   protected
@@ -110,3 +127,5 @@ procedure TAdv32MD5.Final;                                external AdvApi32 name
 procedure TAdv32SHA.Init;                                 external AdvApi32 name 'A_SHAInit';
 procedure TAdv32SHA.Update(const Buffer; Size: LongWord); external AdvApi32 name 'A_SHAUpdate';
 procedure TAdv32SHA.Final (const Digest);                 external AdvApi32 name 'A_SHAFinal';
+
+{$EndIf}
