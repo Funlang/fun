@@ -34,7 +34,6 @@ try
   if _zlib_linux then
     zlib = [
       compress:     zlibdll.getapi('compress',      'ppsi:i'),
-      compressBound: zlibdll.getapi('compressBound', 'i:i'),
       uncompress:   zlibdll.getapi('uncompress',    'ppsi:i'),
       deflateInit2: zlibdll.getapi('deflateInit2_', 'piiiiisi:i'),
       deflate:      zlibdll.getapi('deflate',       'pi:i'),
@@ -46,7 +45,6 @@ try
   else
     zlib = [
       compress:     zlibdll.getapi('compress',      'spsi:i'),
-      compressBound: zlibdll.getapi('compressBound', 'i:i'),
       uncompress:   zlibdll.getapi('uncompress',    'spsi:i'),
       deflateInit2: zlibdll.getapi('deflateInit2_', 'siiiiisi:i'),
       deflate:      zlibdll.getapi('deflate',       'si:i'),
@@ -58,6 +56,12 @@ try
   end if;
 except ?. @;
 end try;
+
+// zlib's compressBound() formula; computed here so the Windows getapi map stays
+// byte-identical to the original (no extra symbol to resolve).
+fun _bound(n)
+  result = n + (n >> 12) + (n >> 14) + (n >> 25) + 13;
+end fun;
 
 // OUT-buffer argument: the real address on Linux, the plain string on Windows.
 fun _zp(x)
@@ -89,7 +93,7 @@ end fun;
 fun compress(s, noheader)
   result = s;
   if zlib then
-    var bound = zlib.compressBound(s.length());
+    var bound = _bound(s.length());
     var r = 0.toChar().x(bound);
     var l = _zw(bound);
     var ret = zlib.compress(_zp(r), _zp(l), s, s.length());
