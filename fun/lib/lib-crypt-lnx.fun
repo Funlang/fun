@@ -13,7 +13,7 @@
 // plain raw key (16/24/32 bytes -> AES-128/192/256).
 //
 // Linux additions: RandomBytes(n) (RAND_bytes) and RSA_PEM(msg, pem, isDecode)
-// for RSA with a PEM/DER key. The Windows RSA() takes a CryptoAPI key blob,
+// for RSA with a PEM key (PEM_read_bio_PrivateKey/PUBKEY). The Windows RSA()
 // which has no portable meaning here, so it raises.
 //
 // Native handles are module-level getapi variables, not a map: on this Fun
@@ -264,7 +264,7 @@ fun _pkey_load(pem, isPriv)
   _BIO_FREE(bio);
 end fun;
 
-// RSA encrypt (isDecode=false) or decrypt (isDecode=true) using a PEM/DER key
+// RSA encrypt (isDecode=false) or decrypt (isDecode=true) using a PEM key
 // (PKCS#1 v1.5 padding by default). A private key works both ways; a public key
 // only encrypts. This is the portable replacement for the CryptoAPI-blob RSA().
 fun RSA_PEM(msg, pem, isDecode)
