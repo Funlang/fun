@@ -48,7 +48,7 @@ try
       compress:     zlibdll.getapi('compress',      'spsi:i'),
       compressBound: zlibdll.getapi('compressBound', 'i:i'),
       uncompress:   zlibdll.getapi('uncompress',    'spsi:i'),
-      deflateInit2: zlibdll.getapi('deflateInit2_', 'siiisi:i'),
+      deflateInit2: zlibdll.getapi('deflateInit2_', 'siiiiisi:i'),
       deflate:      zlibdll.getapi('deflate',       'si:i'),
       deflateEnd:   zlibdll.getapi('deflateEnd',    's:i'),
       inflateInit2: zlibdll.getapi('inflateInit2_', 'sisi:i'),
