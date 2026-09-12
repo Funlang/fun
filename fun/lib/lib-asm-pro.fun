@@ -5,6 +5,18 @@ use 'lib-asm.fun';
 use 'lib-zlib.fun';
 //use 'lib-sse-compress.fun';
 
+// Pointer width decides how `<name>` placeholders (callback addresses) are
+// encoded. On a 64-bit host an address needs 8 bytes; see _ptr2hex and the
+// `mov r64, imm64` entries injected in AsmsInit below.
+var _asm_bits = 'host'.arg().getJson(fd: true).bits;
+fun _ptr2hex(p)
+  if _asm_bits = 64 then
+    result = int2hex64(p);
+  else
+    result = int2hex(p);
+  end if;
+end fun;
+
 var asms = AsmsInit();
 fun AsmsInit()
   var all;
@@ -26,6 +38,20 @@ fun AsmsInit()
     all = fd; #
   end if;
   result = all.getJson(fd: true, sse: sse); //?, 'asms'; ?. result.@count();
+  if _asm_bits = 64 then
+    // `mov r64, imm64` (REX.W + B8+rd, then 8 little-endian bytes). The table
+    // is 32-bit oriented and only carries 4-byte `mov r,%8`, which cannot hold
+    // a 64-bit host address: on Linux a @toCallback address is an mmap'd
+    // libffi closure above 4GB. `%16` is the 8-byte form produced by int2hex64.
+    result['mov rax,%16'] = '48B8%16';
+    result['mov rcx,%16'] = '48B9%16';
+    result['mov rdx,%16'] = '48BA%16';
+    result['mov rbx,%16'] = '48BB%16';
+    result['mov rsp,%16'] = '48BC%16';
+    result['mov rbp,%16'] = '48BD%16';
+    result['mov rsi,%16'] = '48BE%16';
+    result['mov rdi,%16'] = '48BF%16';
+  end if;
 end fun;
 
 Assembly = AssemblyPro;
@@ -45,15 +71,26 @@ class AssemblyPro = AssemblyBase()
             var fn = names[n.@(1)];
             if fn <> nil then
               try      //[fun1: [fn: fn1, type: 'i:i', object: this], ...]
-                result = int2hex(fn.fn.@toCallback(fn.object, fn.type, true));
+                result = _ptr2hex(fn.fn.@toCallback(fn.object, fn.type, true));
               except   //[fun1:  fn1.@toCallback(this, 'i:i', true) , ...]
-                result = int2hex(fn);
+                result = _ptr2hex(fn);
               end try;
             else
               raise '%s not found.'.format(n.@(1));
             end if;
           });
-          // numbers
+        end if;
+        // Collect operand literals before the lookup replace below. On FPC
+        // String.Replace can write through to its subject, so `asm` must not be
+        // read again after the placeholder replace; the lookup itself is fine as
+        // it uses the return value. (Windows/Delphi does not show this.)
+        var toks = new [];
+        asm.replace(/[-+]?(?<!\*)(\$)?\b([\dA-F]++\b)/g, (n){
+          toks.@add(new [n.@(1), n.@(2), n.@@()]);
+          result = n.@@();
+        });
+        if asms[a] = nil then
+          // numbers -> %j placeholders for the table lookup
           a = asm.replace(/[-+]?(?<!\*)\$?\b([\dA-F]++\b)/g, (n){
             var j = n.@(1).length();
             result = '%$j'.eval();
@@ -66,17 +103,17 @@ class AssemblyPro = AssemblyBase()
           // numbers
           if result =~ /%/ then
             var r = result;
-            asm.replace(/[-+]?(?<!\*)(\$)?\b([\dA-F]++\b)/g, (n){
-              r = r.replace(/%(\d)/, (o){
-                var h = n.@(2);
-                if n.@(1) = '$' then
+            for tk in toks do
+              r = r.replace(/%(\d++)/, (o){
+                var h = tk[1];
+                if tk[0] = '$' then
                   if h.length() = 8 then
                     h = h.substr(6, 2) & h.substr(4, 2) & h.substr(2, 2) & h.substr(0, 2);
                   elsif h.length() = 4 then
                     h = h.substr(2, 2) & h.substr(0, 2);
                   end if;
                 end if;
-                if n.@@() =~ /^-/ then
+                if tk[2] =~ /^-/ then
                   // todo
                   if h.length() = 2 then h = h div 1; //?. h;
                     h = h bit xor 0xff + 1;           //?. h;
@@ -85,7 +122,7 @@ class AssemblyPro = AssemblyBase()
                 end if;
                 result = h;
               });
-            });
+            end do;
             result = r;
           end if;
         end if;
