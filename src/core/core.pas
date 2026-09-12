@@ -1450,7 +1450,13 @@ begin
     if eole = nil then eole := CExp.new(nil); // ole
     evar := eole;
     result := 8;
-  end;
+  end
+  else
+    // Base value is nil. evar must be cleared here: every other branch
+    // assigns it, and leaving the previous lookup in place made `a?.x?` hand
+    // back the value found by an earlier call at the same node (x?.k? stale).
+    evar := nil
+  ;
   if evar = nil then begin
     if opt then evar := CExp.new(nil)
            else raise EBase.Create('.' + id + _NotFound);
