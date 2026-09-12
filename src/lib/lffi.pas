@@ -82,6 +82,31 @@ uses SysUtils;
 
 type PValue = base.PValue;
 
+// FPC 3.2.2's bundled ffi unit hardcodes the pre-3.4 libffi enum, where
+// x86_64-linux FFI_UNIX64 = 1. libffi >= 3.4 (Debian 12+, Ubuntu 22.04+,
+// recent Fedora/RHEL) inserts FFI_SYSV before FFI_UNIX64, so the value the
+// loaded libffi accepts there is 2; passing 1 returns FFI_BAD_ABI. Probe
+// once at runtime and cache: new libffi first (2), old libffi second (1),
+// the unit's own FFI_DEFAULT_ABI last. Keeps CentOS 7 (libffi 3.0.13) and
+// modern distros on the same binary.
+var
+  _cif_abi: Integer = -1;
+
+function cifABI: ffi_abi;
+var
+  cif: ffi_cif;
+  at: array[0..0] of Pffi_type;
+begin
+  if _cif_abi < 0 then
+  begin
+    at[0] := @ffi_type_pointer;
+    if      ffi_prep_cif(@cif, ffi_abi(2), 1, @ffi_type_pointer, @at) = FFI_OK then _cif_abi := 2
+    else if ffi_prep_cif(@cif, ffi_abi(1), 1, @ffi_type_pointer, @at) = FFI_OK then _cif_abi := 1
+    else _cif_abi := Ord(FFI_DEFAULT_ABI);
+  end;
+  result := ffi_abi(_cif_abi);
+end;
+
 // f.getapi(name, type)
 procedure _lgetapi(env: CEnv; exp: CExp; exps: CExps; val: PValue);
 var
@@ -250,7 +275,7 @@ begin
     'v': rtype := @ffi_type_void;
   else rtype := @ffi_type_pointer; // incl. 'w' (degrades to narrow char*)
   end;
-  st := ffi_prep_cif(@cif, FFI_DEFAULT_ABI, n, rtype, @at[0]);
+  st := ffi_prep_cif(@cif, cifABI, n, rtype, @at[0]);
   if st <> FFI_OK then raise EBase.Create('getapi: ffi_prep_cif failed');
 
   ret := 0;
@@ -360,9 +385,9 @@ begin
   end;
 
   if Length(FArgs) > 0 then
-    st := ffi_prep_cif(@FCif, FFI_DEFAULT_ABI, Length(FArgs), rtype, @FAt[0])
+    st := ffi_prep_cif(@FCif, cifABI, Length(FArgs), rtype, @FAt[0])
   else
-    st := ffi_prep_cif(@FCif, FFI_DEFAULT_ABI, 0, rtype, nil);
+    st := ffi_prep_cif(@FCif, cifABI, 0, rtype, nil);
   if st <> FFI_OK then raise EBase.Create('toCallback: ffi_prep_cif failed');
 
   FClos := ffi_closure_alloc(SizeOf(ffi_closure), @FCode);

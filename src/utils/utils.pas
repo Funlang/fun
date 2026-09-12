@@ -40,6 +40,23 @@ uses SysUtils
      , io
      ;
 
+// A leading '-' introduces a switch on every platform. Windows also accepts
+// '/switch', so the prefix set keeps '/' there; on Linux (and other Unixes)
+// '/' starts an absolute path, and treating it as a switch would silently
+// drop path arguments such as '/etc/x'. Isolated by a compile-time condition.
+{$IfDef Linux}
+const
+  SwitchPrefix: set of AnsiChar = ['-'];
+{$Else}
+const
+  SwitchPrefix: set of AnsiChar = ['-', '/'];
+{$EndIf}
+
+function IsSwitch(const s: fun.str): fun.bool; inline;
+begin
+  result := (s <> '') and (s[1] in SwitchPrefix);
+end;
+
 //==============================================================
 var
   tick: fun.uint;
@@ -88,7 +105,7 @@ begin
   for i := 1 to ii do
   begin
     s := ParamStr(i);
-    if s[1] in ['-', '/'] then
+    if IsSwitch(s) then
     begin
       j := Pos(id, s);
       if j = 2 then
@@ -117,7 +134,7 @@ begin
     for i := idx to ii do
     begin
       result := ParamStr(i);
-      if not (result[1] in ['-', '/']) then exit;
+      if not IsSwitch(result) then exit;
     end;
     result := '';
   end;
