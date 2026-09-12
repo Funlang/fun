@@ -29,13 +29,14 @@ fun AsmsInit()
     all = inflate(gz); //?. all.length();
     //all = SseDecompress(all);
     sse = true;
-  else         //?. 'fd';
-    // No zlib (Linux, until lib-zlib is ported): use the uncompressed list
-    // that ships beside this module. `use` is compile-time, so both blobs
-    // are embedded on every host; the Windows branch never reaches here
-    // because zlib.dll loads there.
-    use ':asm-list.fd' as fd;
-    all = fd; #
+  else
+    // No zlib. The old fallback read the uncompressed ':asm-list.fd' beside
+    // this module, but `use ':file'` embeds the file at PARSE time
+    // (parse.pas: CIO.Load + CreateStr), so that ~1MB blob was paid on every
+    // host even when the zlib branch ran. lib-zlib now covers Windows
+    // (zlib.dll) and Linux (libz.so.1), so the fallback is unreachable;
+    // raise and keep only the compressed table.
+    raise 'lib-asm-pro: zlib is required for the asm list';
   end if;
   result = all.getJson(fd: true, sse: sse); //?, 'asms'; ?. result.@count();
   if _asm_bits = 64 then
