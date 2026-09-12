@@ -15,7 +15,11 @@ fun SHA256 (msg)
     //var libCr = 'lib-crypt.fun';
     if Cr = nil then //and libCr.find() then
       //Cr = libCr.compile();
-      use 'lib-crypt.fun' as libCr;
+      if 'host'.arg().getJson(fd: true).os = 'linux' then
+        use 'lib-crypt-lnx.fun' as libCr;
+      else
+        use 'lib-crypt.fun' as libCr;
+      end if;
       Cr = libCr;
       //Cr();
     end if;
