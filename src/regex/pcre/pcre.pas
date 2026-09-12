@@ -536,6 +536,11 @@ var
   moff, mlen, rlen, len: Integer;
   d, s, d2, s2: Pointer;
 begin
+  // FSubject may share its buffer with the caller's string value. The in-place
+  // branches below write through raw pointers, which bypass reference-counted
+  // copy-on-write, so force a private buffer first; otherwise
+  // `b := a.replace(re, shorter)` also mutates `a` (FPC).
+  UniqueString(FSubject);
   // Substitute backreferences
   if Assigned(FPcreAction) then
     Result := FPcreAction(FActionTag)
