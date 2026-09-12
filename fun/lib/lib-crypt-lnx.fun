@@ -12,6 +12,10 @@
 // AES accepts the same CryptoAPI PLAINTEXTKEYBLOB that Windows produces, or a
 // plain raw key (16/24/32 bytes -> AES-128/192/256).
 //
+// Linux additions: RandomBytes(n) (RAND_bytes) and RSA_PEM(msg, pem, isDecode)
+// for RSA with a PEM/DER key. The Windows RSA() takes a CryptoAPI key blob,
+// which has no portable meaning here, so it raises.
+//
 // Native handles are module-level getapi variables, not a map: on this Fun
 // version a handle stored in a set member is not reliably callable from a
 // function body, while a plain variable is (the lib-crypt.fun / lib-asm.fun
@@ -40,6 +44,10 @@ var _ENCINIT = nil; var _DECINIT = nil; var _ENCUPDATE = nil; var _DECUPDATE = n
 var _ENCFINAL = nil; var _DECFINAL = nil;
 var _AES128CBC = nil; var _AES192CBC = nil; var _AES256CBC = nil;
 var _AES128ECB = nil; var _AES192ECB = nil; var _AES256ECB = nil;
+var _BIO_NEW = nil; var _BIO_FREE = nil;
+var _PEM_PRIV = nil; var _PEM_PUB = nil;
+var _PKEY_SIZE = nil; var _PKEY_CTX_NEW = nil; var _PKEY_CTX_FREE = nil; var _PKEY_FREE = nil;
+var _PKEY_ENC_INIT = nil; var _PKEY_ENC = nil; var _PKEY_DEC_INIT = nil; var _PKEY_DEC = nil;
 
 fun _clear()
   _MD5 = nil; _SHA1 = nil; _SHA256 = nil; _SHA384 = nil; _SHA512 = nil;
@@ -49,6 +57,10 @@ fun _clear()
   _ENCFINAL = nil; _DECFINAL = nil;
   _AES128CBC = nil; _AES192CBC = nil; _AES256CBC = nil;
   _AES128ECB = nil; _AES192ECB = nil; _AES256ECB = nil;
+  _BIO_NEW = nil; _BIO_FREE = nil;
+  _PEM_PRIV = nil; _PEM_PUB = nil;
+  _PKEY_SIZE = nil; _PKEY_CTX_NEW = nil; _PKEY_CTX_FREE = nil; _PKEY_FREE = nil;
+  _PKEY_ENC_INIT = nil; _PKEY_ENC = nil; _PKEY_DEC_INIT = nil; _PKEY_DEC = nil;
 end fun;
 
 fun _init()
@@ -79,6 +91,18 @@ fun _init()
         _AES128ECB = n.getapi('EVP_aes_128_ecb', ':p');
         _AES192ECB = n.getapi('EVP_aes_192_ecb', ':p');
         _AES256ECB = n.getapi('EVP_aes_256_ecb', ':p');
+        _BIO_NEW  = n.getapi('BIO_new_mem_buf', 'pi:p');
+        _BIO_FREE = n.getapi('BIO_free', 'p:i');
+        _PEM_PRIV = n.getapi('PEM_read_bio_PrivateKey', 'pp:p');
+        _PEM_PUB  = n.getapi('PEM_read_bio_PUBKEY', 'pp:p');
+        _PKEY_SIZE    = n.getapi('EVP_PKEY_size', 'p:i');
+        _PKEY_CTX_NEW = n.getapi('EVP_PKEY_CTX_new', 'pp:p');
+        _PKEY_CTX_FREE = n.getapi('EVP_PKEY_CTX_free', 'p:v');
+        _PKEY_FREE     = n.getapi('EVP_PKEY_free', 'p:v');
+        _PKEY_ENC_INIT = n.getapi('EVP_PKEY_encrypt_init', 'p:i');
+        _PKEY_ENC      = n.getapi('EVP_PKEY_encrypt', 'pppsi:i');
+        _PKEY_DEC_INIT = n.getapi('EVP_PKEY_decrypt_init', 'p:i');
+        _PKEY_DEC      = n.getapi('EVP_PKEY_decrypt', 'pppsi:i');
         _LIB = n;
         found = true;
       except
@@ -206,7 +230,72 @@ fun AES_CBC(msg, key, isDecode)
 end fun;
 
 fun RSA(msg, key, isDecode)
-  raise 'lib-crypt-lnx: CryptoAPI key blobs are not portable to Linux';
+  raise 'lib-crypt-lnx: CryptoAPI key blobs are not portable to Linux; use RSA_PEM';
+end fun;
+
+// Pointer-width little-endian pack/unpack (size_t fields are 8 bytes on LP64;
+// int2str/str2int are fixed at 4).
+var _PTR = 'host'.arg().getJson(fd: true).bits div 8;
+fun _pack(v)
+  result = '';
+  var u = v;
+  for i = 0 to _PTR - 1 do
+    result &= (u mod 256).toChar();
+    u = u div 256;
+  end do;
+end fun;
+fun _unpack(s)
+  result = 0;
+  var m = 1;
+  for i = 0 to _PTR - 1 do
+    result += s.toByte(i) * m;
+    m *= 256;
+  end do;
+end fun;
+
+fun _pkey_load(pem, isPriv)
+  var bio = _BIO_NEW(pem.toNum(-1), pem.length());
+  if bio = nil then raise 'lib-crypt-lnx: BIO_new_mem_buf failed'; end if;
+  if isPriv then
+    result = _PEM_PRIV(bio, nil, nil, nil);
+  else
+    result = _PEM_PUB(bio, nil, nil, nil);
+  end if;
+  _BIO_FREE(bio);
+end fun;
+
+// RSA encrypt (isDecode=false) or decrypt (isDecode=true) using a PEM/DER key
+// (PKCS#1 v1.5 padding by default). A private key works both ways; a public key
+// only encrypts. This is the portable replacement for the CryptoAPI-blob RSA().
+fun RSA_PEM(msg, pem, isDecode)
+  if _LIB = nil then raise 'lib-crypt-lnx: libcrypto not available'; end if;
+  var pkey = _pkey_load(pem, true);
+  if pkey = nil then
+    if isDecode then raise 'lib-crypt-lnx: RSA_PEM needs a private key to decrypt'; end if;
+    pkey = _pkey_load(pem, false);
+  end if;
+  if pkey = nil then raise 'lib-crypt-lnx: RSA_PEM cannot read the key'; end if;
+  var size = _PKEY_SIZE(pkey);
+  var ctx = _PKEY_CTX_NEW(pkey, nil);
+  if ctx = nil then
+    _PKEY_FREE(pkey);
+    raise 'lib-crypt-lnx: EVP_PKEY_CTX_new failed';
+  end if;
+  var out = 0.toChar().x(size + 16);
+  var outlen = _pack(out.length());
+  var r;
+  if isDecode then
+    _PKEY_DEC_INIT(ctx);
+    r = _PKEY_DEC(ctx, out.toNum(-1), outlen.toNum(-1), msg, msg.length());
+  else
+    _PKEY_ENC_INIT(ctx);
+    r = _PKEY_ENC(ctx, out.toNum(-1), outlen.toNum(-1), msg, msg.length());
+  end if;
+  var l = _unpack(outlen);
+  _PKEY_CTX_FREE(ctx);
+  _PKEY_FREE(pkey);
+  if r <= 0 then raise 'lib-crypt-lnx: RSA_PEM operation failed'; end if;
+  result = out.substr(0, l);
 end fun;
 
 fun RandomBytes(n)
