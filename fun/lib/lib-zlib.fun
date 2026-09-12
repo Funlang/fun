@@ -106,8 +106,12 @@ end fun;
 fun decompress(s, length)
   result = s;
   if zlib then
-    var r = 0.toChar().x(length);
-    var l = _zw(length);
+    // zlib's uncompress rejects a zero-capacity destination (Z_BUF_ERROR) even
+    // when the stream inflates to nothing, so keep at least one byte.
+    var cap = length;
+    if cap = 0 then cap = 1; end if;
+    var r = 0.toChar().x(cap);
+    var l = _zw(cap);
     var ret = zlib.uncompress(_zp(r), _zp(l), s, s.length());
     if ret = 0 then
       result = r.substr(len: _zr(l, 0));
@@ -135,8 +139,12 @@ fun flate(s, inde, args, init)
   var r = 0.toChar().x(ZLIB_BLOCK);
   var lr = 0;
   loop
-    var more =  str2int(zs,     @LI);
-    if more and str2int(zs,     @LO) = 0 then
+    // Provide an output buffer whenever the previous one is full. This must
+    // NOT be gated on "input remains": with empty input (or a final flush)
+    // there is no input left but zlib still has to emit the end-of-stream
+    // bytes. Gating on `avail_in > 0` made deflate('')/inflate('') emit
+    // nothing (and diverge from zlib's 2-byte empty raw stream).
+    if str2int(zs, @LO) = 0 then
       _zw(r.toNum(-1))     .move(@PO+zp);
       int2str(ZLIB_BLOCK) .move(@LO+zp);
     end if;
