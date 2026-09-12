@@ -79,18 +79,7 @@ class AssemblyPro = AssemblyBase()
               raise '%s not found.'.format(n.@(1));
             end if;
           });
-        end if;
-        // Collect operand literals before the lookup replace below. On FPC
-        // String.Replace can write through to its subject, so `asm` must not be
-        // read again after the placeholder replace; the lookup itself is fine as
-        // it uses the return value. (Windows/Delphi does not show this.)
-        var toks = new [];
-        asm.replace(/[-+]?(?<!\*)(\$)?\b([\dA-F]++\b)/g, (n){
-          toks.@add(new [n.@(1), n.@(2), n.@@()]);
-          result = n.@@();
-        });
-        if asms[a] = nil then
-          // numbers -> %j placeholders for the table lookup
+          // numbers
           a = asm.replace(/[-+]?(?<!\*)\$?\b([\dA-F]++\b)/g, (n){
             var j = n.@(1).length();
             result = '%$j'.eval();
@@ -100,20 +89,21 @@ class AssemblyPro = AssemblyBase()
           raise '$a not found.'.eval();
         else
           result = asms[a];
-          // numbers
+          // numbers. %(\d++) so the injected 64-bit `mov r64, imm64` (%16)
+          // placeholder is consumed whole, not as "%1" + "6".
           if result =~ /%/ then
             var r = result;
-            for tk in toks do
+            asm.replace(/[-+]?(?<!\*)(\$)?\b([\dA-F]++\b)/g, (n){
               r = r.replace(/%(\d++)/, (o){
-                var h = tk[1];
-                if tk[0] = '$' then
+                var h = n.@(2);
+                if n.@(1) = '$' then
                   if h.length() = 8 then
                     h = h.substr(6, 2) & h.substr(4, 2) & h.substr(2, 2) & h.substr(0, 2);
                   elsif h.length() = 4 then
                     h = h.substr(2, 2) & h.substr(0, 2);
                   end if;
                 end if;
-                if tk[2] =~ /^-/ then
+                if n.@@() =~ /^-/ then
                   // todo
                   if h.length() = 2 then h = h div 1; //?. h;
                     h = h bit xor 0xff + 1;           //?. h;
@@ -122,7 +112,7 @@ class AssemblyPro = AssemblyBase()
                 end if;
                 result = h;
               });
-            end do;
+            });
             result = r;
           end if;
         end if;
