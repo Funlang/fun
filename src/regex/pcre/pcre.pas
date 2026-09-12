@@ -536,12 +536,16 @@ var
   moff, mlen, rlen, len: Integer;
   d, s, d2, s2: Pointer;
 begin
-  // FSubject may share its buffer with the caller's string value. The in-place
-  // branches below write through raw pointers, which bypass reference-counted
-  // copy-on-write, so force a private buffer first; otherwise
-  // `b := a.replace(re, shorter)` also mutates `a` (FPC).
-  UniqueString(FSubject);
   // Substitute backreferences
+  {$IfDef FPC}
+  // FSubject may share its buffer with the caller's string value: FPC's
+  // Variant -> AnsiString conversion returns the Variant's own buffer. The
+  // in-place branches below write through raw pointers, which bypass
+  // reference-counted copy-on-write, so force a private buffer first; otherwise
+  // `b := a.replace(re, shorter)` also mutates `a`. Delphi's conversion hands
+  // back a fresh string, so the original path is left untouched there.
+  UniqueString(FSubject);
+  {$EndIf FPC}
   if Assigned(FPcreAction) then
     Result := FPcreAction(FActionTag)
   else
