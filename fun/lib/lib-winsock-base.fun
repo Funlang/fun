@@ -151,21 +151,24 @@ class Scheduler()
 
   fun Tick()
     var now = NowMs();
-    var keep = new [];
+    // Swap in a fresh array BEFORE iterating so timers registered from inside a
+    // callback (After/Every) land in the new array instead of the one we are
+    // about to discard. Same snapshot discipline as the tasks queue below.
+    var old = this.timers;
+    this.timers = new [];
     var fired = 0;
-    for t in this.timers do
+    for t in old do
       if t.at <= now then
         fired += 1;
         if t.every > 0 then
           t.at = now + t.every;
-          keep.@add(t);
+          this.timers.@add(t);
         end if;
         t.fx();
       else
-        keep.@add(t);
+        this.timers.@add(t);
       end if;
     end do;
-    this.timers = keep;
     var ts = this.tasks;
     this.tasks = new [];
     for f in ts do f(); end do;
