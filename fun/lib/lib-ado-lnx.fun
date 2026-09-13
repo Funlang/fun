@@ -420,17 +420,18 @@ class ADO(cnString, args)
   fun _adFKeys()
     result = new [];
     for t in _tableNames() do
-      // alias the pragma's reserved column names (from/table/to) so they are
-      // reachable as plain Fun member names
-      var sql = 'SELECT id, "from" AS fcol, "table" AS ptab, "to" AS tcol FROM pragma_foreign_key_list("' & t & '")';
-      for f in Execute(sql, false) do
+      // PRAGMA foreign_key_list columns are id, seq, table, from, to, ...
+      // 'from'/'table'/'to' are reserved words in Fun, so read them by string
+      // subscript (member-dot syntax f.from would not parse). This SQLite
+      // predates the table-valued pragma functions, so no SQL-side aliasing.
+      for f in Execute('PRAGMA foreign_key_list("' & t & '")', false) do
         result.@add(new [
           FK_TABLE_SCHEMA: 'main',
           FK_TABLE_NAME:   t,
-          FK_COLUMN_NAME:  f.fcol,
+          FK_COLUMN_NAME:  f['from'],
           PK_TABLE_SCHEMA: 'main',
-          PK_TABLE_NAME:   f.ptab,
-          PK_COLUMN_NAME:  f.tcol,
+          PK_TABLE_NAME:   f['table'],
+          PK_COLUMN_NAME:  f['to'],
           FK_NAME:         'fk_' & t & '_' & (f.id or 0)
         ]);
       end do;
