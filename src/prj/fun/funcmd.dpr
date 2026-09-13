@@ -34,6 +34,9 @@ library funcmd;
 //{$APPTYPE CONSOLE}
 
 uses
+{$IfDef Linux}{$IfNDef FunDll}
+  cthreads, // thread-safe FPC heap (required for @toCallback on a pthread)
+{$EndIf}{$EndIf}
   SysUtils,
   fun in '..\..\core\fun.pas',
   base in '..\..\core\base.pas',
