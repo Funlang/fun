@@ -8,6 +8,9 @@
 
 - 首次以开源形式发布 Fun 核心与标准库源码。
 - 新增 `README.md`、`CONTRIBUTING.md`、`.gitignore`、`.gitattributes`。
+- 加固字符串/列表下标与字节访问，杜绝越界内存访问：越界**写**改为抛异常，越界**读**返回安全
+  默认值（`s[i]`、`.toByte`、`.fromByte`、`.toNum(ptr:)`、`.movs`、`.x`、`.toStr`、列表
+  `@count`）。字符串赋值保持引用语义。
 - 语言版本：9.0。
 
 ## [9.0] - 2026

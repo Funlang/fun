@@ -6,8 +6,15 @@
 > 文中 `行号` 以 `src/` 为准。
 
 > **2026-09-14 更新**：本文档的**越界（MEM 类的"分支/参数"）部分已落地**——见
-> `art/notes/safety-bounds.md`：`s[i]` 读/写、`.toByte/.fromByte/.toNum(ptr:)/.movs/.x/.toStr`、
-> `CList.Count/GetItem` 都加了边界校验（写越界 raise，读越界给安全默认值）。
+> `art/notes/safety-bounds.md` 与 `port-decisions.md` D21：`s[i]` 读/写、
+> `.toByte/.fromByte/.toNum(ptr:)/.movs/.x/.toStr`、`CList.Count/GetItem` 都加了边界校验
+> （写越界 raise，读越界给安全默认值）。
+>
+> 作者同日定：
+> - **不做 COW**：字符串赋值/传参保持**引用语义**（`b := a; b[i] = x` 改到 `a` 是预期行为）。
+> - **`s.move(numDest)` / `toNum(ptr:-1)`** 保留为"不安全内存操作"，等 `-safe` 按 MEM 拦。
+> - **`movs` 管好**（已加边界）；**超大分配**（`@count(超大)`/`l[超大]`/`.x(超大)`）先放过。
+>
 > 本文档剩下的 MEM/NAT/FSW 拦截（`-safe` 开关、`s.move(numDest)`、`toNum(ptr:-1)`、
 > `getapi/@toCallback/COM`）**尚未实现**，仍按本文档规划走。
 

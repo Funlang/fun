@@ -8,6 +8,10 @@ This project records notable changes in the style of [Keep a Changelog](https://
 
 - First open-source release of the Fun core and standard library source.
 - Added `README.md`, `CONTRIBUTING.md`, `.gitignore`, `.gitattributes`.
+- Hardened string/list indexing and byte access against out-of-bounds memory
+  access: out-of-range writes now raise, out-of-range reads yield a safe default
+  (`s[i]`, `.toByte`, `.fromByte`, `.toNum(ptr:)`, `.movs`, `.x`, `.toStr`,
+  list `@count`). String assignment keeps its reference semantics.
 - Language version: 9.0.
 
 ## [9.0] - 2026
