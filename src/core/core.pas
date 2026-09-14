@@ -1598,10 +1598,11 @@ begin
       else if isFloat(idx.value) and (idx.value^ > j) then
       begin
       {$IfDef Unicode}
-        // the float form reads the high byte of char i+1 (1-based), which may
-        // be the terminator; clamp so a wide-char read stays inside the buffer
-        if (idx.value^ >= j + 0.5) and (i + 2 <= Length(s) + 1) then
-          evar.assign(fun.int(s[i+2]) div 256)
+        // the float form selects a byte of char i+1 (1-based): .5 picks the
+        // high byte, .0 the low byte. s[i+1] is in range (i < Length(s)), so
+        // both reads stay inside the buffer.
+        if idx.value^ >= j + 0.5 then
+          evar.assign(fun.int(s[i+1]) div 256)
         else
           evar.assign(fun.int(s[i+1]) mod 256)
         ;
