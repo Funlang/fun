@@ -69,6 +69,7 @@ type
   private
     function GetItem(i: fun.int): fun.ptr;
     procedure SetSize(Value: fun.int);
+    procedure SetCount(Value: fun.int);
   protected
     FAutoDel: fun.bool;
     FCount: fun.int;
@@ -82,7 +83,7 @@ type
     destructor Destroy; override;
     function Add(p: fun.ptr; i: fun.int = -1): fun.int;
     function Contains(p: fun.ptr): fun.bool;
-    property Count: fun.int read FCount write FCount;
+    property Count: fun.int read FCount write SetCount;
     property Item[i: fun.int]: fun.ptr read GetItem; default;
   end;
   
@@ -459,7 +460,25 @@ end;
 
 function CList.GetItem(i: fun.int): fun.ptr;
 begin
-  Result := List^[i];
+  // Defensive: internal callers index by logical Count, but a raw array read
+  // outside it would read heap memory past the list (or the string header).
+  if (i < 0) or (i >= FCount) then
+    Result := nil
+  else
+    Result := List^[i]
+  ;
+end;
+
+// Assigning Count resizes the storage, so a script that grows a list through
+// `.@count(n)` cannot leave Count pointing past the allocated buffer. A
+// negative count (e.g. popping an empty list) is an error, not a header write.
+procedure CList.SetCount(Value: fun.int);
+begin
+  if Value < 0 then
+    raise EBase.Create('list count out of range: ' + IntToStr(Value));
+  if Value > FSize then
+    Size := Value;   // ReallocMem + zero-fill the new slots
+  FCount := Value;
 end;
 
 procedure CList.Grow;

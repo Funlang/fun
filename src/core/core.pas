@@ -1497,21 +1497,35 @@ procedure CIdx.done(flag: fun.int);
 var
   s: PChar;
   p: fun.ptr;
+  cv: fun.str;
   i, j: fun.int;
 begin
   if flag = 9 then begin
     s := PData(exp.value).VPointer;
     j := idx.asInt;
     i := calcIndex(j, Length(s));
+    // Documented range is 0..N-1 / -N..-1 (see fun/lib/lib-string.fun).
+    // A raw write outside it corrupts the string header or the heap.
+    if (i < 0) or (i >= Length(s)) then
+      raise EBase.Create('string index out of range: ' + IntToStr(j));
     if isFloat(idx.value) and (idx.value^ > j) then begin
     {$IfDef Unicode}
       p := s + i;
-      if idx.value^ >= j + 0.5 then p := fun.ptr(fun.int(p) + 1);
+      // fun.int() would truncate the address on a 64-bit target
+      if idx.value^ >= j + 0.5 then p := fun.ptr(fun.uintptr(p) + 1);
       PByte(p)^ := fun.byte(evar.asInt mod 256);
     {$Else}
       (s+i)^ := fun.char(evar.asInt);
     {$EndIf}
-    end else (s+i)^ := evar.asStr[1];
+    end else
+    begin
+      cv := evar.asStr;
+      if Length(cv) = 0 then
+        (s+i)^ := #0
+      else
+        (s+i)^ := cv[1]
+      ;
+    end;
   end else
   inherited done(flag);
 end;
@@ -1534,6 +1548,10 @@ begin
     o := exp.asObj;
     if o is CSet then
     begin
+      // A list is also usable as a sparse integer-keyed map (lib-unicode-lnx
+      // does _gbRev[cp] = ... with cp up to 0xFFFF), so an in-range-but-not-yet-
+      // allocated index grows the backing array in CList.Add. GetItem is
+      // bounds-checked now, so a read past Count is nil instead of a raw read.
       i := idx.asInt;
       evar := CSet(o).Item[i];
       if evar = nil then // not found
@@ -1556,20 +1574,31 @@ begin
       s := exp.asStr;
       j := idx.asInt;
       i := calcIndex(j, Length(s));
-      if not isSet then
+      if (i < 0) or (i >= Length(s)) then
       begin
-        if isFloat(idx.value) and (idx.value^ > j) then begin
-        {$IfDef Unicode}
-          if idx.value^ >= j + 0.5 then
-            evar.assign(fun.int(s[i+1]) div 256)
-          else
-            evar.assign(fun.int(s[i+1]) mod 256)
-          ;
-        {$Else}
-          evar.assign(fun.int(s[i+1]));
-        {$EndIf}
-        end else evar.assign(s[i+1]);
-      end;
+        // Documented range is 0..N-1 / -N..-1 (see fun/lib/lib-string.fun):
+        // reads out of range yield nil (like a list), writes raise.
+        if isSet then
+          raise EBase.Create('string index out of range: ' + IntToStr(j));
+        evar.assign(NullValue);
+      end
+      else if isFloat(idx.value) and (idx.value^ > j) then
+      begin
+      {$IfDef Unicode}
+        // the float form reads the high byte of char i+1 (1-based), which may
+        // be the terminator; clamp so a wide-char read stays inside the buffer
+        if (idx.value^ >= j + 0.5) and (i + 2 <= Length(s) + 1) then
+          evar.assign(fun.int(s[i+2]) div 256)
+        else
+          evar.assign(fun.int(s[i+1]) mod 256)
+        ;
+      {$Else}
+        evar.assign(fun.int(s[i+1]));
+      {$EndIf}
+      end
+      else
+        evar.assign(s[i+1])
+      ;
       result := 9;
     end;
   end;

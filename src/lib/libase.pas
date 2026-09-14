@@ -296,10 +296,12 @@ var
     nums: array of fun.int;
     i, j: fun.int;
   begin
+    // count by low byte: fun.char is 2 bytes on Unicode targets, and Ord()
+    // would index past this 256-entry table.
     SetLength(nums, 256);
     for i := 1 to l do
     begin
-      Inc(nums[Ord(s[i])]);
+      Inc(nums[fun.byte(s[i])]);
     end;
     SetLength(ss, l);
     ii := 1;
@@ -319,6 +321,8 @@ begin
   l  := Length(s);
   if ii >= 0 then
   begin
+    if Int64(l) * Int64(ii) > Int64(MaxInt) then
+      raise EBase.Create('x(n): result too large');
     SetLength(ss, l * ii);
     if l * ii > 0 then
     begin
@@ -703,8 +707,12 @@ begin
   pos := calcIndex(CExps.FindAsVal(exps, 'pos', 2, 0), ls);
   pod := calcIndex(CExps.FindAsVal(exps, 'pod', 3, 0), ld);
   if len = 0 then len := ls - pos;
-  
-  if (pos < 0) or (pos + len > ls) or (pod < 0) or (pod + len > ld) then
+
+  // 64-bit sums so a huge len cannot wrap past the checks and hand Move a
+  // negative (i.e. enormous) count or an out-of-range source pointer.
+  if (pos < 0) or (len < 0) or (pod < 0)
+     or (Int64(pos) + Int64(len) > Int64(ls))
+     or (Int64(pod) + Int64(len) > Int64(ld)) then
     raise EBase.Create('out of bounds');
 
   ps := @s[1 + pos];
@@ -731,7 +739,14 @@ begin
   i := CExps.FindAsVal(exps, 'index', 0, 0);
   with PData(exp.value)^ do
     if VType = VarArray+VarVariant then
-      val^ := exp.value^[i] // Array of Variant
+    begin
+      v := PData(exp.value).VArray;
+      if (i < 0) or (i >= v.Bounds[0].ElementCount) then
+        val^ := NullValue      // out-of-range read, instead of a raw read
+      else
+        val^ := exp.value^[i]  // Array of Variant
+      ;
+    end
     else if VType = VarArray+VarByte then
     begin
       v := PData(exp.value).VArray;
@@ -783,18 +798,20 @@ begin
       val^ := fun.intptr(rawPtr(exp.value))
     else if p = 1 then
     begin
-      i := @s[1];
-      val^ := i^;
+      // Reading a fixed-width scalar out of the buffer requires that many
+      // bytes; a shorter string would read past it. Yield 0 if too short.
+      if Length(s) < SizeOf(fun.uint) then val^ := 0
+      else begin i := @s[1]; val^ := i^; end;
     end
     else if p = 2 then
     begin
-      f := @s[1];
-      val^ := f^;
+      if Length(s) < SizeOf(Single) then val^ := 0
+      else begin f := @s[1]; val^ := f^; end;
     end
     else if p = 3 then
     begin
-      d := @s[1];
-      val^ := d^;
+      if Length(s) < SizeOf(fun.real) then val^ := 0
+      else begin d := @s[1]; val^ := d^; end;
     end;
   end;
 end;
@@ -810,12 +827,16 @@ procedure _toByte(env: CEnv; exp: CExp; exps: CExps; val: PValue);
 var
   s: fun.str;
   c: fun.char;
+  i: fun.int;
 begin
   s := exp.asStr;
-  if s = '' then
+  i := CExps.FindAsVal(exps, 'pos', 0, 0);
+  // An out-of-range read is a caller bug: yield 0 (as for an empty string)
+  // instead of reading past the string buffer.
+  if (s = '') or (i < 0) or (i >= Length(s)) then
     c := #0
   else
-    c := s[1 + CExps.FindAsVal(exps, 'pos', 0, 0)]
+    c := s[1 + i]
   ;
   val^ := fun.int(c);
 end;
@@ -830,6 +851,10 @@ begin
   i := CExps.FindAsVal(exps, 'pos',  0, 0);
   j := CExps.FindAsVal(exps, 'byte', 1, 0);
   s := exp.asStr;
+  // A raw write past the buffer corrupts the heap; past the start corrupts the
+  // string header. Both are rejected.
+  if (i < 0) or (i >= Length(s)) then
+    raise EBase.Create('fromByte index out of range: ' + IntToStr(i));
   p := fun.ptr(s);
   Inc(p, i);
   p^ := j;
