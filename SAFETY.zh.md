@@ -5,6 +5,12 @@
 >
 > 文中 `行号` 以 `src/` 为准。
 
+> **2026-09-14 更新**：本文档的**越界（MEM 类的"分支/参数"）部分已落地**——见
+> `art/notes/safety-bounds.md`：`s[i]` 读/写、`.toByte/.fromByte/.toNum(ptr:)/.movs/.x/.toStr`、
+> `CList.Count/GetItem` 都加了边界校验（写越界 raise，读越界给安全默认值）。
+> 本文档剩下的 MEM/NAT/FSW 拦截（`-safe` 开关、`s.move(numDest)`、`toNum(ptr:-1)`、
+> `getapi/@toCallback/COM`）**尚未实现**，仍按本文档规划走。
+
 ---
 
 ## 0. 能力分类(策略可按类单独开/关)
