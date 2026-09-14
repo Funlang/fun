@@ -1534,7 +1534,7 @@ function CIdx.find(isSet: fun.bool = false; needCalc: fun.bool = true): fun.int;
 var
   o: CBase;
   s: fun.str;
-  i, j: fun.int;
+  i, j, n: fun.int;
 begin
   result := 0;
   evar := nil;
@@ -1552,19 +1552,32 @@ begin
       // does _gbRev[cp] = ... with cp up to 0xFFFF), so an in-range-but-not-yet-
       // allocated index grows the backing array in CList.Add. GetItem is
       // bounds-checked now, so a read past Count is nil instead of a raw read.
+      // Only a negative index below -Count (calcIndex cannot wrap it) is an
+      // error: a read is nil and a write must not silently append.
+      n := CSet(o).count();
       i := idx.asInt;
-      evar := CSet(o).Item[i];
-      if evar = nil then // not found
+      if calcIndex(i, n) < 0 then
       begin
         if isSet then
+          raise EBase.Create('index out of range: ' + IntToStr(i));
+        if enull = nil then enull := CExp.new(nil);
+        evar := enull;
+      end
+      else
+      begin
+        evar := CSet(o).Item[i];
+        if evar = nil then // not found
         begin
-          evar := CExp.new(nil);
-          CSet(o).items.Item[i] := evar;
-        end
-        else
-        begin
-          if enull = nil then enull := CExp.new(nil);
-          evar := enull;
+          if isSet then
+          begin
+            evar := CExp.new(nil);
+            CSet(o).items.Item[i] := evar;
+          end
+          else
+          begin
+            if enull = nil then enull := CExp.new(nil);
+            evar := enull;
+          end;
         end;
       end;
     end
