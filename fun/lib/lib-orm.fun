@@ -123,7 +123,7 @@ class DObject(db, args)
     else
       result = new [];
       for r in rs do
-        var o = DObject(db, args);
+        var o = DObject(db, this.args);
         var k = Read(o, r);
         result[k] = o;
       end do;

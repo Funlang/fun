@@ -13,6 +13,9 @@ This project records notable changes in the style of [Keep a Changelog](https://
   (`s[i]`, `.toByte`, `.fromByte`, `.toNum(ptr:)`, `.movs`, `.x`, `.toStr`,
   list `@count`). String assignment keeps its reference semantics.
 - Language version: 9.0.
+- Fix multi-row `DObject.Get`: the nested `Read` helper shadowed the `args`
+  member, so fetching more than one row raised `@Fields not found`. The row loop
+  now reads `this.args`.
 
 ## [9.0] - 2026
 

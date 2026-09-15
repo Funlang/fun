@@ -12,6 +12,8 @@
   默认值（`s[i]`、`.toByte`、`.fromByte`、`.toNum(ptr:)`、`.movs`、`.x`、`.toStr`、列表
   `@count`）。字符串赋值保持引用语义。
 - 语言版本：9.0。
+- 修复多行 `DObject.Get`：内嵌的 `Read` 会遮蔽 `args` 成员，取多于一行的结果时抛
+  `@Fields not found`。取行循环改为读 `this.args`。
 
 ## [9.0] - 2026
 
