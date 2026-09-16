@@ -154,7 +154,16 @@ class DObject(db, args)
     var ss = '';
     var old = @old$ or [];
     for k: v in props do
-      var f = args.@Fields[k]; next when not f or ('' & v = '' & old[k]) or kvs = nil and f.IsPrimary; // Equal ! Ignore Keys !
+      var f = args.@Fields[k]; next when not f;
+      next when kvs = nil and f.IsPrimary; // Ignore Keys !
+      // Equal -> skip. But only when old actually recorded this key: with a
+      // fresh DObject @old$ is empty, and ('' & v = '' & old[k]) then treats
+      // v = '' as "unchanged", silently dropping updates that CLEAR a column.
+      var same = false;
+      for ok: ov in old do
+        if ok = k and ('' & v = '' & ov) then same = true; end if;
+      end do;
+      next when same;
       ss &= ',\n\t%s = %s'.escape().format(DQ(f.Name), this.Bind(v, f.DataType));
     end do;
     var sql = 'UPDATE %s\nSET\n%s%s\n'.escape().format(DQ(args.Name, true), ss.substr(2), Where(kvs, isPKey));
