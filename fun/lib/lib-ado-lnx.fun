@@ -48,6 +48,9 @@ var SQLITE_OPEN_READWRITE = 2;
 var SQLITE_OPEN_CREATE    = 4;
 var SQLITE_TRANSIENT      = -1; // (sqlite3_destructor_type)-1
 
+// Never handed to C as data: only its (non-NULL) address, to bind '' text.
+var _emptybuf = ' ';
+
 var SQLITE_INTEGER = 1;
 var SQLITE_FLOAT   = 2;
 var SQLITE_TEXT    = 3;
@@ -82,6 +85,10 @@ var _changes   = _lib.getapi('sqlite3_changes',        'p:i');
 var _bind_int  = _lib.getapi('sqlite3_bind_int64',     'pin:i');
 var _bind_dbl  = _lib.getapi('sqlite3_bind_double',    'pid:i');
 var _bind_text = _lib.getapi('sqlite3_bind_text',      'pisip:i');
+// same function, but the text pointer comes in as a number: the 's' path
+// passes @copy[1], which is a NULL pointer for an empty string, and
+// sqlite reads a NULL pointer as SQL NULL (an empty string must stay '').
+var _bind_textp = _lib.getapi('sqlite3_bind_text',     'pipip:i');
 var _bind_blob = _lib.getapi('sqlite3_bind_blob',      'pipip:i');
 var _bind_null = _lib.getapi('sqlite3_bind_null',      'pi:i');
 var _busy      = _lib.getapi('sqlite3_busy_timeout',   'pi:i');
@@ -122,6 +129,19 @@ end fun;
 
 fun _sp(c)
   result = c = 32 or c = 9 or c = 13 or c = 10;
+end fun;
+
+// SQL NULL test. FPC's `v = nil` is true for 0 and '' too (isNull treats a zero
+// number as empty), so it cannot be used to decide whether a bound value is
+// NULL: binding 0/FALSE stored NULL instead of 0. Encode the value as JSON for
+// a strict test (nil -> "[null]", 0 -> "[0]", '' -> [""]); only reached when the
+// loose test already said nil, so the normal binding path is unaffected.
+fun _isNull(v)
+  try
+    result = [v].@toJson(json: true) = '[null]';
+  except
+    result = true;
+  end try;
 end fun;
 
 fun _conn_str(cn)
@@ -297,7 +317,7 @@ class ADO(cnString, args)
   fun _bindParam(st, i, p)
     var v = p.v;
     var dt = p.dt;
-    if v = nil then
+    if v = nil and _isNull(v) then
       _bind_null(st, i);
       return;
     end if;
@@ -313,7 +333,11 @@ class ADO(cnString, args)
       _bind_blob(st, i, b.toNum(-1), b.length(), SQLITE_TRANSIENT);
     else
       var s = '' & v;
-      _bind_text(st, i, s, s.length(), SQLITE_TRANSIENT);
+      if s = '' then
+        _bind_textp(st, i, _emptybuf.toNum(-1), 0, SQLITE_TRANSIENT);
+      else
+        _bind_text(st, i, s, s.length(), SQLITE_TRANSIENT);
+      end if;
     end if;
   end fun;
 
