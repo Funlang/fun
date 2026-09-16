@@ -72,7 +72,7 @@ var POLLHUP       = 16;
 var POLLNVAL      = 32;
 var SD_SEND       = 1;
 var BUFFERSIZE    = 65536;   // one full UDP datagram
-var BackLog       = 5;
+var BackLog       = 128;  // 5 overflowed the accept queue: single-threaded accept loop + client 1s/3s SYN retries
 
 //--------------------------------------------------------------
 // libc handles (plain module-level vars)
