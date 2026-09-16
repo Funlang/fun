@@ -374,7 +374,7 @@ class HttpBase(ip, port, onGet) # onGet(req/res, header, body, sock, args)
         if c.text =~ /^Connection:\sclose$/mi then
           // c.close = true; // 不要主动关闭连接，nginx 可能重用连接
         end if;
-        c.len = c.text.match(/(?<=Content-Length:\s)\d++/).@@() div 1; //?. c.len;
+        c.len = c.text.match(/(?<=Content-Length:\s)\d++/i).@@() div 1; //?. c.len;
       except
         c.len = 0; //?. 'Content-Length missing.';
       end try;
