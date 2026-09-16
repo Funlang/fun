@@ -15,12 +15,17 @@ fun SHA256 (msg)
     //var libCr = 'lib-crypt.fun';
     if Cr = nil then //and libCr.find() then
       //Cr = libCr.compile();
+      // `use ... as X` binds X only inside the block that contains it, so the
+      // alias must be copied to Cr in the same branch (assigning after the
+      // inner `end if` raises "libCr not found" and the except below would
+      // silently fall back to the slow, non-wrapping pure implementation).
       if 'host'.arg().getJson(fd: true).os = 'linux' then
         use 'lib-crypt-lnx.fun' as libCr;
+        Cr = libCr;
       else
         use 'lib-crypt.fun' as libCr;
+        Cr = libCr;
       end if;
-      Cr = libCr;
       //Cr();
     end if;
     return Cr.Crypt(msg, Cr.CALG_Sha256);
@@ -147,14 +152,14 @@ fun SHA256 (msg)
       a = T1 + T2;
     end do;
 
-    N[0] += a;
-    N[1] += b;
-    N[2] += c;
-    N[3] += d;
-    N[4] += e;
-    N[5] += f;
-    N[6] += g;
-    N[7] += h;
+    N[0] = (N[0] + a) bit and 0xffffffff;
+    N[1] = (N[1] + b) bit and 0xffffffff;
+    N[2] = (N[2] + c) bit and 0xffffffff;
+    N[3] = (N[3] + d) bit and 0xffffffff;
+    N[4] = (N[4] + e) bit and 0xffffffff;
+    N[5] = (N[5] + f) bit and 0xffffffff;
+    N[6] = (N[6] + g) bit and 0xffffffff;
+    N[7] = (N[7] + h) bit and 0xffffffff;
   end loop;
 
   return b32a2hex(N);
