@@ -354,6 +354,8 @@ end;
   var
     i, j, p, ii: fun.int;
     c: fun.char;
+    cp: fun.int;
+    lo: fun.int;
   begin
     ii := Length(s);
     SetLength(result, ii);
@@ -381,6 +383,50 @@ end;
         begin
           result[j] := fun.char(StrToInt('x' + Copy(s, i+1, 4)));
           Inc(i, 4);
+        end
+      {$Else}
+        // Non-Unicode build (FPC/Linux): strings are UTF-8, so decode
+        // \uHHHH into its UTF-8 bytes. Surrogate pairs are combined.
+        else if (c = 'u') and (i+3 < ii) then
+        begin
+          cp := StrToInt('x' + Copy(s, i+1, 4));
+          Inc(i, 4);
+          if (cp >= $D800) and (cp <= $DBFF) and (i+5 < ii)
+             and (s[i+1] = '\') and (s[i+2] = 'u') then
+          begin
+            lo := StrToInt('x' + Copy(s, i+3, 4));
+            if (lo >= $DC00) and (lo <= $DFFF) then
+            begin
+              cp := $10000 + ((cp - $D800) shl 10) + (lo - $DC00);
+              Inc(i, 6);
+            end
+          end;
+          if cp < $80 then
+            result[j] := fun.char(cp)
+          else if cp < $800 then
+          begin
+            result[j] := fun.char($C0 or (cp shr 6));
+            Inc(j);
+            result[j] := fun.char($80 or (cp and $3F));
+          end
+          else if cp < $10000 then
+          begin
+            result[j] := fun.char($E0 or (cp shr 12));
+            Inc(j);
+            result[j] := fun.char($80 or ((cp shr 6) and $3F));
+            Inc(j);
+            result[j] := fun.char($80 or (cp and $3F));
+          end
+          else
+          begin
+            result[j] := fun.char($F0 or (cp shr 18));
+            Inc(j);
+            result[j] := fun.char($80 or ((cp shr 12) and $3F));
+            Inc(j);
+            result[j] := fun.char($80 or ((cp shr 6) and $3F));
+            Inc(j);
+            result[j] := fun.char($80 or (cp and $3F));
+          end
         end
       {$EndIf}
         else
