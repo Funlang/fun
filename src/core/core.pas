@@ -252,12 +252,20 @@ type
   CId = class(CLeft)
   protected
     evar: CExp;
+    // Nil cell handed out when `x?` cannot resolve a name. The old code did
+    // CExp.new(nil) on every evaluation, but evar is a borrowed field (nothing
+    // del's it in Destroy), so every evaluation leaked one CExp -- a 20000
+    // iteration loop grew RSS by 1.8MB. Allocate once and reset the value to nil
+    // before handing it out: same observable behavior as a fresh cell every time,
+    // without the allocation.
+    enil: CExp;
     opt: fun.bool;
     procedure done(flag: fun.int); virtual;
     function find(isSet: fun.bool = false; needCalc: fun.bool = true): fun.int; virtual;
     function Getitem(i: fun.int): CExp; override;
   public
     id: fun.str;
+    destructor Destroy; override;
     procedure assign(obj: CBase); overload; override;
     procedure assign(obj: CNew); overload; override;
     procedure assign(const val: CValue); overload; override;
@@ -271,6 +279,9 @@ type
   CId2 = class(CId)
   private
     enull: CExp;
+    // Same as CId.enil: the nil cell handed out when `a.b?` has a nil base,
+    // allocated once instead of per lookup.
+    eopt: CExp;
   protected
     eole: CExp;
     exp: CExp;
@@ -287,6 +298,11 @@ type
   CIdx = class(CId2)
   protected
     idx: CExp;
+    // Result cell for string index reads. The old code did CExp.new(nil) on every
+    // `s[i]` and evar is a borrowed field, so every read leaked one CExp -- 20000
+    // reads of s[0] grew RSS by 3.2MB. One cell is enough: the string branch
+    // always assigns the current value into it.
+    estr: CExp;
     procedure done(flag: fun.int); override;
     function find(isSet: fun.bool = false; needCalc: fun.bool = true): fun.int; override;
   public
@@ -1326,9 +1342,18 @@ begin
   result := 0;
   if evar = nil then evar := UID(id);
   if evar = nil then begin
-    if opt then evar := CExp.new(nil)
-           else raise EBase.Create(id + _NotFound);
+    if opt then begin
+      if enil = nil then enil := CExp.new(nil) else enil.assign(NullValue);
+      evar := enil;
+    end
+    else raise EBase.Create(id + _NotFound);
   end;
+end;
+
+destructor CId.Destroy;
+begin
+  del(enil);
+  inherited Destroy;
 end;
 
 function CId.Getitem(i: fun.int): CExp;
@@ -1361,6 +1386,7 @@ begin
   del(exp);
   del(eole);
   del(enull);
+  del(eopt);
   inherited Destroy;
 end;
 
@@ -1458,8 +1484,11 @@ begin
     evar := nil
   ;
   if evar = nil then begin
-    if opt then evar := CExp.new(nil)
-           else raise EBase.Create('.' + id + _NotFound);
+    if opt then begin
+      if eopt = nil then eopt := CExp.new(nil) else eopt.assign(NullValue);
+      evar := eopt;
+    end
+    else raise EBase.Create('.' + id + _NotFound);
   end;
 end;
 
@@ -1484,6 +1513,7 @@ end;
 destructor CIdx.Destroy;
 begin
   del(idx);
+  del(estr);
   inherited Destroy;
 end;
 
@@ -1583,7 +1613,8 @@ begin
     end
     else if isStr(exp.value) then
     begin
-      if evar = nil then evar := CExp.new(nil);
+      if estr = nil then estr := CExp.new(nil);
+      evar := estr;
       s := exp.asStr;
       j := idx.asInt;
       i := calcIndex(j, Length(s));
