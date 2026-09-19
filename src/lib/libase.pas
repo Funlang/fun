@@ -375,6 +375,7 @@ end;
           result[j] := c
         else if (c = 'x') and (i+1 < ii) then
         begin
+          // StrToInt accepts x-prefix hex on both FPC and Delphi — verified
           result[j] := fun.char(StrToInt(Copy(s, i, 3)));
           Inc(i, 2);
         end
