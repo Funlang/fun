@@ -1034,6 +1034,12 @@ end;
 
 //==============================================================
 function _ParseJson(const s: fun.str; json: fun.bool = false; fd: fun.bool = false; sse: fun.bool = false): CNode;
+const
+  // Deepest allowed [] / {} nesting (shared by the JSON scan and the FD scan
+  // below). Parsing itself is iterative, but the resulting tree is destroyed,
+  // cloned and serialized recursively, so an unbounded document could blow the
+  // stack (DoS). 512 is far deeper than any real document needs.
+  MaxNestDepth = 512;
 var
   Root: CSet;
   Level: fun.int;
@@ -1061,6 +1067,15 @@ var
     n: CSet;
     v: CData;
   begin
+    if Level >= MaxNestDepth then
+    begin
+      // Release the partial tree (depth is capped at MaxNestDepth, so this is
+      // safe) and report an error instead of building an unusable structure.
+      if Root <> nil then del(Root);
+      Root := nil;
+      raise EBase.Create('nesting too deep (max ' + IntToStr(MaxNestDepth) + ')');
+    end;
+
     // Empty the Data
     v.VType := VarEmpty;
 

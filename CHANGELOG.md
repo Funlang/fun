@@ -13,6 +13,11 @@ This project records notable changes in the style of [Keep a Changelog](https://
   (`s[i]`, `.toByte`, `.fromByte`, `.toNum(ptr:)`, `.movs`, `.x`, `.toStr`,
   list `@count`). String assignment keeps its reference semantics.
 - Language version: 9.0.
+- Bound JSON/FD nesting depth when parsing. The scanners are iterative, but the
+  resulting tree is released, cloned and serialized recursively, so an
+  attacker-supplied document with thousands of `[`/`{` levels could overflow the
+  stack and crash the process (DoS). Nesting deeper than 512 levels now raises
+  instead of building an unusable tree.
 - Fix multi-row `DObject.Get`: the nested `Read` helper shadowed the `args`
   member, so fetching more than one row raised `@Fields not found`. The row loop
   now reads `this.args`.
