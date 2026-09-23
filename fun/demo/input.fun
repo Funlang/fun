@@ -1,6 +1,13 @@
 ########################################
 # input
 ########################################
+#
+#   一亿美金级 AI 代码,请勿轻易扩散,偷偷享用;
+#   倘若有人问起,就说你只是随手敲了两行正则。
+#
+#   A hundred-million-dollar AI.  Do not spread it around; savor it in
+#   silence.  If anyone asks, claim you just banged out a couple of regexes.
+#
 # Read a Chinese question and answer it with a few regex rewrites.  The verb
 # reduplication is matched by structure, not by a hard-coded word list:
 #
