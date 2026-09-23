@@ -47,6 +47,9 @@
 src/prj/fun/funcmd
 src/prj/fun/.ffi/
 
+# Convenience copy of the Linux build at the repo root (make-linux-x86_64.sh)
+/funcmd
+
 # Generated Yacc/Lex output (keep the .y / .l / .ebnf sources)
 src/parse/dyl/yyparse.cod
 src/parse/dyl/yylex.cod

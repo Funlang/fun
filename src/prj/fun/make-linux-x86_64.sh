@@ -135,3 +135,16 @@ fi
 echo "Building funcmd with $FPC_BIN"
 # shellcheck disable=SC2086
 "$FPC_BIN" funcmd.dpr -B -Sd -O2 -Xs -XX -CX -Tlinux -dLinux -dMD5 $PCRE_FLAGS $TCC_FLAGS $FFI_FLAGS "$@"
+
+# --- Convenience copy at the repository root ---------------------
+# Refresh ./funcmd in the repo root on every build, so scripts and manual runs
+# can use it without reaching into src/prj/fun. funcmd is linked with
+# -rpath $ORIGIN, so the copy needs libtcc.so beside it as well.
+ROOT="$(cd "$HERE/../../.." && pwd)"
+if [ -f "$HERE/funcmd" ]; then
+    cp -f "$HERE/funcmd" "$ROOT/funcmd"
+    if [ -f "$HERE/libtcc.so" ]; then
+        cp -f "$HERE/libtcc.so" "$ROOT/libtcc.so"
+    fi
+    echo "Copied funcmd to $ROOT/funcmd"
+fi
