@@ -18,7 +18,7 @@
 #     GBK (2 bytes) or UTF-8 CJK (3 bytes), so the same rule holds for either
 #     encoding.
 #   - The single-line replace callback is an arrow lambda, and its 你/我 swap
-#     uses the `and`/`or` if-else idiom: (cond and a) or b yields a when cond
+#     uses the `and`/`or` if-else idiom: `cond and a or b` yields a when cond
 #     is true and b otherwise.
 #
 # 'line'.input(prompt, ok: ok) reads one line.  ok is false at end of input
@@ -30,7 +30,7 @@
 
 fun reply(q)
   result = q.replace(/(.{1,3})不\1/g, '$1');                  # A不A -> A
-  result = result.replace(/你|我/g, (m) -> (m.value() = '你' and '我') or '你');
+  result = result.replace(/你|我/g, m -> m.value() = '你' and '我' or '你');
   result = result.replace(/(吗)?\?/g, '!');                   # 疑问句尾 -> !
 end fun;
 
