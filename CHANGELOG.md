@@ -25,7 +25,11 @@ This project records notable changes in the style of [Keep a Changelog](https://
   `'char'.input([prompt])` (a single keypress in raw mode on a terminal) and
   `'all'.input([prompt])`. An optional second argument receives an `ok` flag
   that reports end of input; because Fun treats `''` and nil as equal, that flag
-  is the only reliable way to stop a read loop that may see blank lines.
+  is the only reliable way to stop a read loop that may see blank lines. Linux
+  reads standard input byte by byte and supports all three modes; on Windows
+  the builtin only reads lines, through the RTL `ReadLn`, so the text comes
+  back in the build's string encoding (ANSI, or Unicode on Delphi 2009) and a
+  multi-byte character is never split into bytes.
 
 ## [9.0] - 2026
 

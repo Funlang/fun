@@ -675,11 +675,14 @@ end;
 // named 'prompt') is written through env.echo first, so it obeys the runner's
 // log/GUI setting.
 //
-// Bytes come straight from standard input (fd 0 / the console handle), never
-// through the RTL text device, so piped input and a live console behave the
-// same and no buffered byte is stranded for the next call. On a terminal
-// 'char' flips it to raw mode for the single keypress and restores it at once;
-// 'line' stays canonical, so the terminal keeps doing echo and line editing.
+// Linux reads standard input byte by byte, so all three modes work and a
+// UTF-8 terminal is passed through as is; 'char' flips the terminal to raw
+// mode for the single keypress and restores it at once.
+//
+// Windows keeps it simple and only reads lines, through the RTL ReadLn: the
+// text comes back in the same encoding the build uses for strings (ANSI, or
+// Unicode on Delphi 2009), so a multi-byte character is never split into
+// bytes. 'char' and 'all' are treated as 'line' there.
 //
 // End of input is reported as nil for 'line' and 'char' ('all' just returns
 // whatever was left, '' when nothing). Fun treats '' and nil as equal, though,
@@ -689,13 +692,14 @@ end;
 //   var ok; var line = 'line'.input(ok: ok);
 //   while ok loop ?. line; line = 'line'.input(ok: ok); end do;
 //
-// One raw byte from standard input. raw = true asks a terminal for a single
-// keypress (no echo, no Enter); it is ignored when input is not a terminal.
-// Returns false at end of input.
-function _inputByte(var b: fun.byte; raw: fun.bool): fun.bool;
+
+// One byte from standard input. raw = true asks the terminal for a single
+// keypress (no echo, no Enter). Returns false at end of input.
 {$IfDef Linux}
+function _inputCh(var c: fun.str; raw: fun.bool): fun.bool;
 var
   t0, t1: termios;
+  b: fun.byte;
 begin
   result := false;
   if raw and (tcgetattr(0, t0) = 0) then
@@ -710,54 +714,19 @@ begin
   end
   else
     result := fpRead(0, b, 1) = 1;
+  if result then c := fun.char(b);
 end;
-{$Else}
-{$IfDef WinCE}
-// WinCE has no console API: read through the RTL text device instead.
-var
-  c: fun.char;
-begin
-  result := false;
-  {$I-}
-  if Eof(Input) then exit;
-  Read(Input, c);
-  {$I+}
-  if IOResult = 0 then
-  begin
-    b := fun.byte(c);
-    result := true;
-  end;
-end;
-{$Else}
-var
-  h: THandle;
-  n, m, m0: DWORD;
-begin
-  result := false;
-  h := GetStdHandle(STD_INPUT_HANDLE);
-  if (h = 0) or (h = INVALID_HANDLE_VALUE) then exit;
-  n := 0;
-  if raw and GetConsoleMode(h, m) then
-  begin
-    m0 := m;
-    SetConsoleMode(h, m and not (ENABLE_LINE_INPUT or ENABLE_ECHO_INPUT));
-    result := ReadFile(h, @b, 1, n, nil) and (n = 1);
-    SetConsoleMode(h, m0);
-  end
-  else
-    result := ReadFile(h, @b, 1, n, nil) and (n = 1);
-end;
-{$EndIf}
 {$EndIf}
 
 procedure _input(env: CEnv; exp: CExp; exps: CExps; val: PValue);
 var
-  mode, prompt, s: fun.str;
-  b: fun.byte;
+  prompt, s: fun.str;
   has: fun.bool;
   e: CExp;
+{$IfDef Linux}
+  mode, c: fun.str;
+{$EndIf}
 begin
-  mode   := LowerCase(exp.asStr);
   prompt := CExps.FindAsVal(exps, 'prompt', 0, '');
   val^   := NullValue;
 
@@ -766,31 +735,42 @@ begin
   has := false;
   s   := '';
 
+{$IfDef Linux}
+  mode := LowerCase(exp.asStr);
   if mode = 'all' then
   begin
-    while _inputByte(b, false) do
+    while _inputCh(c, false) do
     begin
       has := true;
-      s := s + fun.char(b);
+      s := s + c;
     end;
     val^ := s;
   end
   else if mode = 'char' then
   begin
-    has := _inputByte(b, true);
-    if has then val^ := fun.char(b);
+    has := _inputCh(c, true);
+    if has then val^ := c;
   end
   else
   begin
     // 'line' (default)
-    while _inputByte(b, false) do
+    while _inputCh(c, false) do
     begin
       has := true;
-      if b = 10 then break;                 // LF ends the line
-      if b <> 13 then s := s + fun.char(b); // drop CR (CRLF input)
+      if c = #10 then break;        // LF ends the line
+      if c <> #13 then s := s + c; // drop CR (CRLF input)
     end;
     if has then val^ := s;
   end;
+{$Else}
+  // Windows/WinCE: read one line through the RTL, so the text comes back in
+  // the build's string encoding and is never split into bytes.
+  {$I-}
+  ReadLn(Input, s);
+  {$I+}
+  has := IOResult = 0;
+  if has then val^ := s;
+{$EndIf}
 
   // 'ok' out-parameter: a variable receives whether anything was read.
   e := CExps.Find(exps, 'ok', 1);
