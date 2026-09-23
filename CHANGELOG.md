@@ -21,6 +21,11 @@ This project records notable changes in the style of [Keep a Changelog](https://
 - Fix multi-row `DObject.Get`: the nested `Read` helper shadowed the `args`
   member, so fetching more than one row raised `@Fields not found`. The row loop
   now reads `this.args`.
+- Added console input builtins in `libase.pas`: `'line'.input([prompt])`,
+  `'char'.input([prompt])` (a single keypress in raw mode on a terminal) and
+  `'all'.input([prompt])`. An optional second argument receives an `ok` flag
+  that reports end of input; because Fun treats `''` and nil as equal, that flag
+  is the only reliable way to stop a read loop that may see blank lines.
 
 ## [9.0] - 2026
 

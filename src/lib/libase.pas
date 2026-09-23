@@ -35,7 +35,7 @@ implementation
 
 {$IfDef Unicode}{$WARN WIDECHAR_REDUCED OFF}{$EndIf}
 
-uses SysUtils, Variants, {$IfNDef Linux}Windows,{$Else}Linux, unixtype,{$EndIf}
+uses SysUtils, Variants, {$IfNDef Linux}Windows,{$Else}Linux, unixtype, baseunix, termio,{$EndIf}
      io, parse
      {$IfDef WinCOM}  , winole  {$EndIf}
      {$IfDef WinAPI}  , winapi  {$EndIf}
@@ -662,6 +662,139 @@ begin
   {$EndIf}
   s := CExps.FindAsVal(exps, '', 0, '');
   CIO.Save(exp.asStr, s, CExps.FindAsVal(exps, 'cp', 1, 0), CExps.FindAsVal(exps, 'append', 2, false));
+end;
+
+//==============================================================
+// Console input, the read-side sibling of '?.':
+//
+//   'line'.input([prompt])       read one line (line ending stripped)
+//   'char'.input([prompt])       read one keypress (a single key on a terminal)
+//   'all'.input([prompt])        read everything up to end of input
+//
+// The receiver string selects the mode; an optional argument (positional, or
+// named 'prompt') is written through env.echo first, so it obeys the runner's
+// log/GUI setting.
+//
+// Bytes come straight from standard input (fd 0 / the console handle), never
+// through the RTL text device, so piped input and a live console behave the
+// same and no buffered byte is stranded for the next call. On a terminal
+// 'char' flips it to raw mode for the single keypress and restores it at once;
+// 'line' stays canonical, so the terminal keeps doing echo and line editing.
+//
+// End of input is reported as nil for 'line' and 'char' ('all' just returns
+// whatever was left, '' when nothing). Fun treats '' and nil as equal, though,
+// so a blank line is not distinguishable from EOF by the return value alone:
+// pass a variable as the second argument (or as 'ok:') and it is set true
+// when a line/char/key was read and false at end of input:
+//   var ok; var line = 'line'.input(ok: ok);
+//   while ok loop ?. line; line = 'line'.input(ok: ok); end do;
+//
+// One raw byte from standard input. raw = true asks a terminal for a single
+// keypress (no echo, no Enter); it is ignored when input is not a terminal.
+// Returns false at end of input.
+function _inputByte(var b: fun.byte; raw: fun.bool): fun.bool;
+{$IfDef Linux}
+var
+  t0, t1: termios;
+begin
+  result := false;
+  if raw and (tcgetattr(0, t0) = 0) then
+  begin
+    t1 := t0;
+    t1.c_lflag := t1.c_lflag and not (ICANON or ECHO);
+    t1.c_cc[VMIN]  := 1;
+    t1.c_cc[VTIME] := 0;
+    tcsetattr(0, TCSANOW, t1);
+    result := fpRead(0, b, 1) = 1;
+    tcsetattr(0, TCSANOW, t0);
+  end
+  else
+    result := fpRead(0, b, 1) = 1;
+end;
+{$Else}
+{$IfDef WinCE}
+// WinCE has no console API: read through the RTL text device instead.
+var
+  c: fun.char;
+begin
+  result := false;
+  {$I-}
+  if Eof(Input) then exit;
+  Read(Input, c);
+  {$I+}
+  if IOResult = 0 then
+  begin
+    b := fun.byte(c);
+    result := true;
+  end;
+end;
+{$Else}
+var
+  h: THandle;
+  n, m, m0: DWORD;
+begin
+  result := false;
+  h := GetStdHandle(STD_INPUT_HANDLE);
+  if (h = 0) or (h = INVALID_HANDLE_VALUE) then exit;
+  n := 0;
+  if raw and GetConsoleMode(h, m) then
+  begin
+    m0 := m;
+    SetConsoleMode(h, m and not (ENABLE_LINE_INPUT or ENABLE_ECHO_INPUT));
+    result := ReadFile(h, @b, 1, n, nil) and (n = 1);
+    SetConsoleMode(h, m0);
+  end
+  else
+    result := ReadFile(h, @b, 1, n, nil) and (n = 1);
+end;
+{$EndIf}
+{$EndIf}
+
+procedure _input(env: CEnv; exp: CExp; exps: CExps; val: PValue);
+var
+  mode, prompt, s: fun.str;
+  b: fun.byte;
+  has: fun.bool;
+  e: CExp;
+begin
+  mode   := LowerCase(exp.asStr);
+  prompt := CExps.FindAsVal(exps, 'prompt', 0, '');
+  val^   := NullValue;
+
+  if prompt <> '' then env.echo(prompt);
+
+  has := false;
+  s   := '';
+
+  if mode = 'all' then
+  begin
+    while _inputByte(b, false) do
+    begin
+      has := true;
+      s := s + fun.char(b);
+    end;
+    val^ := s;
+  end
+  else if mode = 'char' then
+  begin
+    has := _inputByte(b, true);
+    if has then val^ := fun.char(b);
+  end
+  else
+  begin
+    // 'line' (default)
+    while _inputByte(b, false) do
+    begin
+      has := true;
+      if b = 10 then break;                 // LF ends the line
+      if b <> 13 then s := s + fun.char(b); // drop CR (CRLF input)
+    end;
+    if has then val^ := s;
+  end;
+
+  // 'ok' out-parameter: a variable receives whether anything was read.
+  e := CExps.Find(exps, 'ok', 1);
+  if (e <> nil) and (e is CLeft) then e.assign(has);
 end;
 
 // f.find(sub = false, size = false, rel = false)
@@ -1329,6 +1462,9 @@ begin
   // not in libase
   // @count(), @each(), @add(), @clone()
   // @toJSON()
+  
+  // Console input
+  ids['input']   := CExp.new(nil).parse(Int64(fun.uintptr(@_input)));
   
   // Fun Lib
   ids['GetLib']  := CExp.new(nil).parse(Int64(fun.uintptr(@_getlib)));

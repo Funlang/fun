@@ -17,6 +17,10 @@
   嵌套超过 512 层会抛异常，而不再构建出无法使用的结构。
 - 修复多行 `DObject.Get`：内嵌的 `Read` 会遮蔽 `args` 成员，取多于一行的结果时抛
   `@Fields not found`。取行循环改为读 `this.args`。
+- 在 `libase.pas` 中新增控制台输入内建：`'line'.input([prompt])`、
+  `'char'.input([prompt])`（终端上为原始模式的单键读取）与 `'all'.input([prompt])`。
+  可选的第二个参数用于接收 `ok` 标志，表示本次是否读到内容；由于 Fun 中空串与 nil
+  相等，存在空行时该标志是让读循环可靠结束的唯一方式。
 
 ## [9.0] - 2026
 
