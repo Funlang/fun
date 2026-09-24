@@ -7,6 +7,15 @@ This project records notable changes in the style of [Keep a Changelog](https://
 ## [Unreleased]
 
 - First open-source release of the Fun core and standard library source.
+- The command-line `funcmd` now writes diagnostics to stderr and exits non-zero
+  (1) on a parse or runtime error, so `a.fun && b.fun`, CI jobs and cron alarms
+  no longer mistake a failed script for success. Runtime errors are prefixed
+  with `file:line:`. A function traceback (one `  in name() (file:line)` line per
+  frame, innermost first, capped at 10) is appended only in builds that define
+  `-dFunTraceback`; the default build reports the failing command alone, so it
+  pays nothing per call. Normal script output (`?.`) stays on stdout. The
+  embedded `fun.dll` `Run` return-code contract is unchanged, and
+  `-gui`/non-console runs stay silent as before.
 - Added `README.md`, `CONTRIBUTING.md`, `.gitignore`, `.gitattributes`.
 - Hardened string/list indexing and byte access against out-of-bounds memory
   access: out-of-range writes now raise, out-of-range reads yield a safe default

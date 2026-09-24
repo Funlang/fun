@@ -30,6 +30,9 @@
 #
 # Extra FPC switches can be appended, e.g.:
 #   ./make-linux-x86_64.sh -dCalcOpt
+#   ./make-linux-x86_64.sh -dFunTraceback  # opt-in: append a function traceback to
+#                                         # runtime errors (a small per-call cost;
+#                                         # the default build reports only file:line)
 # ============================================================
 set -e
 HERE="$(cd "$(dirname "$0")" && pwd)"

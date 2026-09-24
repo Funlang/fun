@@ -366,11 +366,41 @@ type
   public
     lastError: CNode;
     lastNode: CNode;
+    {$IfDef FunTraceback}
+    // Live dynamic call chain (innermost last) and a snapshot taken the first
+    // time the pending error leaves a function frame. `calls` unwinds normally
+    // via try/finally, so a copy is needed to keep the traceback alive until the
+    // handler prints it. Cleared per handled error (see traceErrorNode) so the
+    // next error starts fresh.
+    //
+    // `calls` is a manual stack (callsTop is the live depth) so push/pop on the
+    // function-call hot path cost an index write, not a SetLength; it only grows
+    // geometrically. errCalls is the frozen copy printed by the handler.
+    //
+    // Compiled in only with -dFunTraceback: the default build has no per-call
+    // bookkeeping at all and reports just the failing command (file:line).
+    calls: array of CFun;
+    callsTop: fun.int;
+    errCalls: array of CFun;
+    {$EndIf}
     function call(exp: CExp; const id: fun.str; exps: CExps; val: PValue; ct: fun.byte = CDoMethod): fun.bool; virtual;
     function clone: CEnv; virtual;
     procedure echo(const s: fun.str); virtual;
     function isCase: fun.bool;
     function lastErrorFun: fun.str;
+    // Call chain of the pending error (or the live chain when none), innermost
+    // first, one `  in <name>() (file:line)` line per function/class frame. Used
+    // by the command-line driver to append a traceback to a runtime error.
+    // Always present so the driver needs no conditional; returns '' unless the
+    // build defines FunTraceback.
+    function traceBack: fun.str;
+    {$IfDef FunTraceback}
+    procedure pushCall(f: CFun);
+    procedure popCall;
+    procedure snapshotError;
+    {$EndIf}
+    // Drop a frozen chain so the next run/error starts clean. No-op by default.
+    procedure resetTrace;
     procedure trace(n: CNode); virtual;
     procedure traced(n: CNode; tracing: fun.bool = false); virtual;
     procedure traceErrorNode;
@@ -741,35 +771,63 @@ end;
 function CFun.call(env: CEnv; exps: CExps): PValue;
 var
   o: CObj;
+  {$IfDef FunTraceback}ok: fun.bool;{$EndIf}
 begin
   //env.trace(self);
-  
+  // Frame bookkeeping (only with -dFunTraceback) rides on the try/finally each
+  // branch already had: push on entry, and in the finally either drop the frame
+  // (normal return) or, while an exception unwinds (`ok` still false), record
+  // the chain at the deepest frame before dropping it. No handler frame is added
+  // to the function-call hot path, and the default build has no bookkeeping
+  // lines at all.
   if isClass then
   begin
     o := newObj;
     doCopy(o.items, exps);
     evar.assign(o);
     result := evar.value;
-  
+
     pushObj(o);
+    {$IfDef FunTraceback}
+    env.pushCall(self);
+    ok := false;
+    {$EndIf}
     try
       doCall(env, exps);
+      {$IfDef FunTraceback}
+      ok := true;
+      {$EndIf}
     finally
       popObj;
+      {$IfDef FunTraceback}
+      if not ok then env.snapshotError;
+      env.popCall;
+      {$EndIf}
     end;
   end
   else
   begin
     stack.Push;
+    {$IfDef FunTraceback}
+    env.pushCall(self);
+    ok := false;
+    {$EndIf}
     try
       if params <> nil then params.assign(exps);
       all.run(env);
       result := evar.value;
+      {$IfDef FunTraceback}
+      ok := true;
+      {$EndIf}
     finally
       stack.Pop;
+      {$IfDef FunTraceback}
+      if not ok then env.snapshotError;
+      env.popCall;
+      {$EndIf}
     end;
   end;
-  
+
   {$IfDef IDE}
   env.traced(self);
   {$EndIf}
@@ -1854,6 +1912,100 @@ begin
   end;
 end;
 
+{$IfDef FunTraceback}
+const
+  // Innermost-first cap on the frozen/printed traceback: deep recursion then
+  // shows the last 10 frames instead of thousands.
+  MaxTraceFrames = 10;
+
+function CEnv.traceBack: fun.str;
+
+  function FrameOf(f: CFun): fun.str;
+  var
+    m: CModu;
+    s: fun.str;
+  begin
+    result := '';
+    if f.id = '' then exit;
+    if f.root is CModu then m := CModu(f.root) else m := nil;
+    if (m <> nil) and (m.fileName <> '') then
+      s := m.fileName + ':' + IntToStr(f.row)
+    else
+      s := 'line ' + IntToStr(f.row)
+    ;
+    if f.isClass then
+      result := '  in class ' + f.id + ' (' + s + ')' + #10
+    else
+      result := '  in ' + f.id + '() (' + s + ')' + #10
+    ;
+  end;
+
+var
+  i, n: fun.int;
+begin
+  result := '';
+  if Length(errCalls) > 0 then
+  begin
+    for i := Length(errCalls) - 1 downto 0 do
+      result := result + FrameOf(errCalls[i]);
+  end
+  else
+  begin
+    n := callsTop;
+    if n > MaxTraceFrames then n := MaxTraceFrames;
+    for i := 0 to n - 1 do
+      result := result + FrameOf(calls[callsTop - 1 - i]);
+  end;
+end;
+
+procedure CEnv.pushCall(f: CFun);
+begin
+  if callsTop >= Length(calls) then
+    SetLength(calls, Length(calls) * 2 + 8)
+  ;
+  calls[callsTop] := f;
+  Inc(callsTop);
+end;
+
+procedure CEnv.popCall;
+begin
+  if callsTop > 0 then Dec(callsTop);
+end;
+
+procedure CEnv.snapshotError;
+var
+  i, n, base: fun.int;
+begin
+  // Only the first (deepest) frame records, so the traceback is not overwritten
+  // by the outer frames as the exception unwinds through their finally blocks.
+  // Freeze at most the innermost MaxTraceFrames frames.
+  if Length(errCalls) = 0 then
+  begin
+    n := callsTop;
+    if n > MaxTraceFrames then n := MaxTraceFrames;
+    base := callsTop - n;
+    SetLength(errCalls, n);
+    for i := 0 to n - 1 do
+      errCalls[i] := calls[base + i];
+  end;
+end;
+
+{$Else}
+
+function CEnv.traceBack: fun.str;
+begin
+  result := '';
+end;
+
+{$EndIf}
+
+procedure CEnv.resetTrace;
+begin
+  {$IfDef FunTraceback}
+  errCalls := nil;
+  {$EndIf}
+end;
+
 procedure CEnv.trace(n: CNode);
 begin
   lastNode := n;
@@ -1867,6 +2019,9 @@ end;
 procedure CEnv.traceErrorNode;
 begin
   lastError := lastNode;
+  // The error is being handled by a script try/except, so the pending traceback
+  // is consumed; a later uncaught error must snapshot a fresh chain.
+  resetTrace;
 end;
 
 end.

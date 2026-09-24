@@ -88,6 +88,47 @@ type
 // var
 var
   isLog: fun.bool;
+  hadError: fun.bool;
+
+// `file:line: ` prefix for the command currently executing, taken from the
+// environment's last traced node (see CRuns.run / CEnv.trace). Empty during
+// parsing (nothing has run yet) and when the source file is unknown.
+function ErrPos: fun.str;
+var
+  n: CNode;
+  m: CModu;
+begin
+  result := '';
+  if _ENV = nil then exit;
+  n := _ENV.lastNode;
+  if n = nil then exit;
+  if n.root is CModu then m := CModu(n.root) else m := nil;
+  if (m <> nil) and (m.fileName <> '') and (n is CRune) then
+    result := m.fileName + ':' + IntToStr(CRune(n).row) + ': '
+  ;
+end;
+
+// All diagnostics go to stderr (the `?.`/echo output keeps stdout), so a script
+// like `a.fun && b.fun`, CI, or cron can tell success from failure. The exit
+// code itself is set at _Exit from hadError. Runtime errors carry a
+// `file:line:` prefix and a function traceback; parse errors keep their
+// existing `... @ row,col` form (the parser has no module trace yet).
+procedure PrintErr(const s: fun.str);
+var
+  t: fun.str;
+begin
+  try
+    if not isLog then exit;
+    Writeln(StdErr, ErrPos + s);
+    if _ENV <> nil then
+    begin
+      t := _ENV.traceBack;
+      if t <> '' then Write(StdErr, t);
+    end;
+    Flush(StdErr);
+  except
+  end;
+end;
 
 // Functions
 procedure Println(const s: fun.str); stdcall;
@@ -122,7 +163,8 @@ end;
 // CFunParser
 procedure CFunParser.DoError(const s: fun.str);
 begin
-  Println(s);
+  hadError := true;
+  PrintErr(s);
 end;
 
 // CFunRunner
@@ -212,7 +254,7 @@ exports Run;
 {$Else}
 
   v, gui: fun.bool;
-  log: fun.str;
+  log, fnGiven: fun.str;
   hlog: fun.int;
 
   {$IfDef _C_}
@@ -245,6 +287,11 @@ begin
 
   p   := nil;
   f   := FindParam('fun', 1);
+  fnGiven := f;
+  // A named-but-missing script is a user error: do not fall through to the
+  // executable's embedded-script / <exe>.fun fallback (which parses the binary
+  // as a script and exits 0). That fallback is only for the no-argument case.
+  if (f <> '') and not FileExists(f) then goto _Error;
   if (f = '') or not FileExists(f) then
   begin
     try
@@ -259,6 +306,9 @@ begin
     goto _Run;
     
 _Error:
+    // A named-but-missing script file is an error (non-zero exit); no argument
+    // at all is a help request, which stays 0.
+    hadError := fnGiven <> '';
     PrintVer();
     goto _Exit;
   end;
@@ -272,6 +322,7 @@ _Error:
 _Run:
   r := CFunRunner.Create;
   _ENV := r;
+  r.resetTrace;
 
   try
     InitTick;
@@ -291,7 +342,10 @@ _Run:
     end;
   except
     on E: EBase do
-      Println(E.Message);
+      begin
+        hadError := true;
+        PrintErr(E.Message);
+      end;
   end;
 
   try
@@ -301,6 +355,7 @@ _Run:
   end;
 
 _Exit:
+  if hadError then ExitCode := 1;
   try
     if isLog then
     begin
