@@ -29,12 +29,17 @@
 #     uses the `and`/`or` if-else idiom: `cond and a or b` yields a when cond
 #     is true and b otherwise.
 #
-# 'line'.input(prompt, ok: ok) reads one line.  ok is false at end of input
-# (Ctrl-D / EOF), the only reliable stop condition: Fun compares '' and nil
-# as equal, so a blank line would otherwise look like end of input.
+# 'line'.input(prompt, ok: ok) reads one line.  The session stops on a blank
+# line: Fun compares '' and nil as equal, so an empty line and end of input
+# (Ctrl-D / EOF, where ok is false) both read back as ''.  `exit when not ok
+# or q = ''` ends the loop on either one.
 #
-# Interactively:        funcmd fun/demo/input.fun
-# From a pipe:          printf '你会聊天吗?\n' | funcmd fun/demo/input.fun
+# Interactively:        fun/funcmd fun/demo/input.fun
+# From a pipe:          printf '你会聊天吗?\n' | fun/funcmd fun/demo/input.fun
+
+# Windows consoles default to GBK; read strings back as UTF-8 so the Chinese
+# round-trips unchanged.  (Linux is UTF-8 already.)
+'defaultCodePage'.set(65001);
 
 fun reply(q)
   result = q.replace(/(.{1,3})(不|没)\1/g, '$1');           # A不A / A没A -> A
@@ -42,14 +47,15 @@ fun reply(q)
   result = result.replace(/(吗|吧|呢)?(\?|？)/g, '!');       # 疑问句尾 -> !
 end fun;
 
-?. 'Ask me anything.  End with Ctrl-D.';
+?. 'Ask me anything.  End with a blank line (or Ctrl-D).';
 
 var ok;
 var q = 'line'.input('Q: ', ok: ok);
 
-while ok do
+loop
+  exit when not ok or q = '';   # blank line / Ctrl-D ends the session
   ?. 'A: ' & reply(q);
   q = 'line'.input('Q: ', ok: ok);
-end do;
+end loop;
 
 ?. 'Bye.';
