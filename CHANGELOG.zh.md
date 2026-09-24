@@ -12,7 +12,9 @@
   `文件:行:`。函数调用栈（每帧一行 `  in 名称() (文件:行)`，由内向外，最多 10 帧）仅在
   定义了 `-dFunTraceback` 的构建中追加；默认构建只报出错命令，因此每次调用零开销。
   脚本正常输出（`?.`）仍走 stdout。内嵌 `fun.dll` 的 `Run` 返回码约定不变，`-gui`/非控制台
-  运行与原先一样保持静默。
+  运行与原先一样保持静默。诊断信息直接写操作系统标准错误句柄（不再用 RTL 的
+  `StdErr`/`ErrOutput` 文本文件，Delphi 7 未声明这两个标识符），因此驱动在 Delphi 7
+  与 Free Pascal 上都能原样编译。
 - 新增 `README.md`、`CONTRIBUTING.md`、`.gitignore`、`.gitattributes`。
 - 加固字符串/列表下标与字节访问，杜绝越界内存访问：越界**写**改为抛异常，越界**读**返回安全
   默认值（`s[i]`、`.toByte`、`.fromByte`、`.toNum(ptr:)`、`.movs`、`.x`、`.toStr`、列表

@@ -32,6 +32,12 @@ function FindParamAsBool(const id: fun.str; idx: fun.int = 0): fun.bool;
 function FindCmdLine: fun.bool;
 procedure FreeCmdLine;
 function SetStdOut(const fn: fun.str): fun.int;
+// Write a diagnostic string to standard error. Standalone (not the RTL text
+// file StdErr/ErrOutput) because Delphi 7 declares neither: StdErr is an FPC
+// name, and ErrOutput only appeared in later Delphi versions. Going through the
+// OS handle also does not depend on the APPTYPE CONSOLE directive having opened
+// the file at startup, so an -gui run that later attaches to a console works.
+procedure WriteErr(const s: fun.str);
 
 implementation
 
@@ -195,5 +201,39 @@ begin
   result := 0;
 {$EndIf}
 end;
+
+procedure WriteErr(const s: fun.str);
+{$IfDef Linux}
+begin
+  if s <> '' then
+  begin
+    Write(StdErr, s);
+    Flush(StdErr);
+  end;
+end;
+{$Else}
+{$IfDef WinCE}
+begin
+  // WinCE has no console; keep diagnostics on the RTL text device.
+  if s <> '' then
+  begin
+    Write(Output, s);
+    Flush(Output);
+  end;
+end;
+{$Else}
+var
+  h: THandle;
+  n: DWORD;
+  b: AnsiString;
+begin
+  if s = '' then exit;
+  h := GetStdHandle(STD_ERROR_HANDLE);
+  if (h = 0) or (h = INVALID_HANDLE_VALUE) then exit;
+  b := s;
+  WriteFile(h, b[1], Length(b), n, nil);
+end;
+{$EndIf}
+{$EndIf}
 
 end.

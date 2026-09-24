@@ -15,7 +15,10 @@ This project records notable changes in the style of [Keep a Changelog](https://
   `-dFunTraceback`; the default build reports the failing command alone, so it
   pays nothing per call. Normal script output (`?.`) stays on stdout. The
   embedded `fun.dll` `Run` return-code contract is unchanged, and
-  `-gui`/non-console runs stay silent as before.
+  `-gui`/non-console runs stay silent as before. Diagnostics go through the OS
+  standard-error handle (not the RTL `StdErr`/`ErrOutput` text file, which
+  Delphi 7 does not declare), so the driver builds unchanged on Delphi 7 and
+  Free Pascal.
 - Added `README.md`, `CONTRIBUTING.md`, `.gitignore`, `.gitattributes`.
 - Hardened string/list indexing and byte access against out-of-bounds memory
   access: out-of-range writes now raise, out-of-range reads yield a safe default

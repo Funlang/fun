@@ -119,13 +119,12 @@ var
 begin
   try
     if not isLog then exit;
-    Writeln(StdErr, ErrPos + s);
+    WriteErr(ErrPos + s + LineEnding);
     if _ENV <> nil then
     begin
       t := _ENV.traceBack;
-      if t <> '' then Write(StdErr, t);
+      if t <> '' then WriteErr(t);
     end;
-    Flush(StdErr);
   except
   end;
 end;

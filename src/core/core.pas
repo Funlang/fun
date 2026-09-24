@@ -1919,6 +1919,8 @@ const
   MaxTraceFrames = 10;
 
 function CEnv.traceBack: fun.str;
+var
+  i, n: fun.int;
 
   function FrameOf(f: CFun): fun.str;
   var
@@ -1939,9 +1941,6 @@ function CEnv.traceBack: fun.str;
       result := '  in ' + f.id + '() (' + s + ')' + #10
     ;
   end;
-
-var
-  i, n: fun.int;
 begin
   result := '';
   if Length(errCalls) > 0 then
