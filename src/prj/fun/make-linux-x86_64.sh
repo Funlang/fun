@@ -33,6 +33,12 @@
 #   ./make-linux-x86_64.sh -dFunTraceback  # opt-in: append a function traceback to
 #                                         # runtime errors (a small per-call cost;
 #                                         # the default build reports only file:line)
+#   ./make-linux-x86_64.sh -dUseCThreads   # opt-in: link FPC's thread-safe heap
+#                                         # (cthreads). Only needed when a C
+#                                         # library calls a @toCallback closure
+#                                         # from a pthread it created itself; it
+#                                         # adds ~20% to every single-threaded
+#                                         # run, so it is off by default.
 # ============================================================
 set -e
 HERE="$(cd "$(dirname "$0")" && pwd)"

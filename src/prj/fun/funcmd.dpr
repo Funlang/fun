@@ -35,7 +35,15 @@ library funcmd;
 
 uses
 {$IfDef Linux}{$IfNDef FunDll}
-  cthreads, // thread-safe FPC heap (required for @toCallback on a pthread)
+{$IfDef UseCThreads}
+  // Thread-safe FPC heap. Only needed when a C library invokes a @toCallback
+  // closure from a pthread it created itself, i.e. when Fun evaluates on a
+  // foreign thread. The lock on every allocation costs ~20% on every run, so
+  // this is opt-in: build with -dUseCThreads. The single-threaded poll(2)
+  // server (lib-winsock-lnx) and same-thread FFI callbacks do not need it.
+  // See art/notes/linux-threading.md.
+  cthreads,
+{$EndIf}
 {$EndIf}{$EndIf}
   SysUtils,
   fun in '..\..\core\fun.pas',
