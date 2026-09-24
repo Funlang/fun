@@ -119,7 +119,7 @@ var
 begin
   try
     if not isLog then exit;
-    WriteErr(ErrPos + s + LineEnding);
+    WriteErr(ErrPos + s + sLineBreak);
     if _ENV <> nil then
     begin
       t := _ENV.traceBack;
