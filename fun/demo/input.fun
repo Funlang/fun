@@ -38,9 +38,10 @@
 # Interactively:        fun/funcmd fun/demo/input.fun
 # From a pipe:          printf '你会聊天吗?\n' | fun/funcmd fun/demo/input.fun
 
-# Windows consoles default to GBK; read strings back as UTF-8 so the Chinese
-# round-trips unchanged.  (Linux is UTF-8 already.)
-'defaultCodePage'.set(65001);
+# Windows: a GBK console hands back GBK bytes, so there is no portable
+# in-script switch for this ('defaultCodePage'.set(65001) did not affect the
+# read).  On Windows, save this file as ANSI/GBK before running it, or launch
+# it with funu.exe.  On Linux the console is already UTF-8.
 
 fun reply(q)
   result = q.replace(/(.{1,3})(不|没)\1/g, '$1');           # A不A / A没A -> A
