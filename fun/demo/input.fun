@@ -32,7 +32,8 @@
 # 'line'.input(prompt, ok: ok) reads one line.  The session stops on a blank
 # line: Fun compares '' and nil as equal, so an empty line and end of input
 # (Ctrl-D / EOF, where ok is false) both read back as ''.  `exit when not ok
-# or q = ''` ends the loop on either one.
+# or q = ''` ends the loop on either one.  The read sits at the top of the
+# loop, so there is no priming read before it and no duplicate at the bottom.
 #
 # Interactively:        fun/funcmd fun/demo/input.fun
 # From a pipe:          printf '你会聊天吗?\n' | fun/funcmd fun/demo/input.fun
@@ -50,12 +51,12 @@ end fun;
 ?. 'Ask me anything.  End with a blank line (or Ctrl-D).';
 
 var ok;
-var q = 'line'.input('Q: ', ok: ok);
+var q;
 
 loop
+  q = 'line'.input('Q: ', ok: ok);
   exit when not ok or q = '';   # blank line / Ctrl-D ends the session
   ?. 'A: ' & reply(q);
-  q = 'line'.input('Q: ', ok: ok);
 end loop;
 
 ?. 'Bye.';
