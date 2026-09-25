@@ -1030,6 +1030,82 @@ begin
 end;
 
 //==============================================================
+// Basic-value type ids and strict comparison.
+//
+// Delphi's raw VType is not portable at the script level: FPC/Linux strings are
+// varString (256) while Delphi Unicode uses varUString (258), and the object tag
+// differs too ($201 vs 2010). So a.type() reports a normalized id whose core
+// numbers match COM VARENUM (VT_*), the table behind Delphi's VType and ADO's
+// DataTypeEnum. Integer widths collapse into 3 (VT_I4), floats into 5 (VT_R8),
+// every string form into 8 (VT_BSTR). 100+ is reserved for Fun-only object
+// kinds; those are values of the object libraries, so they are out of scope
+// here (CLbase only sees non-object values).
+const
+  tyEmpty =  0; // nil                      VT_EMPTY
+  tyInt   =  3; // int (all integer widths) VT_I4
+  tyReal  =  5; // real (single/double)     VT_R8
+  tyCurr  =  6; // currency (COM/ADO)       VT_CURRENCY
+  tyTime  =  7; // time/date                VT_DATE
+  tyStr   =  8; // str (all string forms)   VT_BSTR
+  tyBool  = 11; // bool                     VT_BOOL
+  tyOther = -1; // not a basic value
+
+function funType(vt: TVarType): fun.int;
+begin
+  if vt <= varNull then
+    result := tyEmpty
+  else if vt = varBoolean then
+    result := tyBool
+  else if isStr(vt) then
+    result := tyStr
+  else if vt = varDate then
+    result := tyTime
+  else if vt = varCurrency then
+    result := tyCurr
+  else if isFloat(vt) then
+    result := tyReal
+  else if isNum(vt) then
+    result := tyInt
+  else
+    result := tyOther
+  ;
+end;
+
+// a.type() -> stable logical type id (see funType)
+procedure _type(env: CEnv; exp: CExp; exps: CExps; val: PValue);
+begin
+  val^ := funType(PData(exp.value)^.VType);
+end;
+
+// a.eq(b) -> strict equality: same logical type AND same value. Unlike '=' there
+// is no coercion: nil/0/''/false are all distinct, '1' <> 1, 'ABC' <> 'abc',
+// 1 <> 1.0. Only basic values are handled; object identities stay with '='.
+procedure _eq(env: CEnv; exp: CExp; exps: CExps; val: PValue);
+var
+  e: CExp;
+  a, b: PData;
+  ta: fun.int;
+begin
+  val^ := false;
+  e := CExps.Find(exps, '', 0);
+  if e = nil then exit;
+  a := PData(exp.value);
+  b := PData(e.value);
+  ta := funType(a.VType);
+  if ta <> funType(b.VType) then exit;
+  case ta of
+    tyEmpty: val^ := true;
+    // Byte-exact and case-sensitive; routing through fun.str normalizes mixed
+    // string forms (varString/varUString/varOleStr) before comparing.
+    tyStr:   val^ := fun.str(exp.value^) = fun.str(e.value^);
+    tyOther: val^ := false;
+  else
+    // Same logical family (int/real/currency/time/bool); the Variant operator
+    // compares across widths exactly, with no string/number coercion.
+    val^ := exp.value^ = e.value^;
+  end;
+end;
+
 // s.toRegex(= ''), options
 procedure _toRegex(env: CEnv; exp: CExp; exps: CExps; val: PValue);
 var
@@ -1481,6 +1557,10 @@ begin
   ids['toChar']  := CExp.new(nil).parse(Int64(fun.uintptr(@_toChar)));
   // toRegex
   ids['toRegex'] := CExp.new(nil).parse(Int64(fun.uintptr(@_toRegex)));
+
+  // Strict comparison and logical type id (basic values only)
+  ids['eq']      := CExp.new(nil).parse(Int64(fun.uintptr(@_eq)));
+  ids['type']    := CExp.new(nil).parse(Int64(fun.uintptr(@_type)));
   
   // Regex
   // match

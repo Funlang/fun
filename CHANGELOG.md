@@ -42,6 +42,15 @@ This project records notable changes in the style of [Keep a Changelog](https://
   the builtin only reads lines, through the RTL `ReadLn`, so the text comes
   back in the build's string encoding (ANSI, or Unicode on Delphi 2009) and a
   multi-byte character is never split into bytes.
+- Added strict comparison and a type id for basic values: `a.eq(b)` is true only
+  when the type and the value both match (`nil`/`0`/`''`/`false` are distinct,
+  `'1' <> 1`, `1 <> 1.0`, string compare is case-sensitive), and `a.type()`
+  returns a portable logical type id. The ids are anchored to COM `VARENUM`
+  (`VT_*`, the table behind Delphi's `VType` and ADO's `DataTypeEnum`) and
+  normalize the runtime's platform-dependent tags: every integer width -> 3,
+  every float width -> 5, every string form -> 8. Both live in `libase`, apply
+  to basic (non-object) values, and leave the loose `=` unchanged; `100+` is
+  reserved for Fun-only object kinds.
 
 ## [9.0] - 2026
 
