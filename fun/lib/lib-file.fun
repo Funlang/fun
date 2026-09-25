@@ -4,7 +4,7 @@
 ########################################
 # lib-file
 ########################################
-#   built-in (8)
+#   built-in (9)
 ########################################
 #     f.load ()
 #     f.save (str, cp = 0, append = false)    # cp 10056 - utf8 without bom
@@ -14,4 +14,6 @@
 #     f.time (flag, set)   # flag: 0-CreationTime, 1-LastWriteTime
 #     f.size ()
 #     f.hash (mode)        # mode: 0-MD5, 1-SHA1
+########################################
+#     x.input(prompt, ok) # x: line, char, all
 ########################################

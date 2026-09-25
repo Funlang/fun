@@ -21,6 +21,16 @@
 // Linux note: an OUT buffer must be passed as the Fun string's real address
 // (buf.toNum(-1)), not as an 's'/'p' string argument - the engine would hand C
 // a pointer to a temporary copy and the writes would be lost.
+//
+// Built-in methods used here (see also lib-cmdline-lnx.fun):
+########################################
+#   built-in (2)
+########################################
+#     n.arg()                   # argv[n]: 0 = executable, 1 = script
+#     'host'.arg()              # host facts (FD): fun, os, cpu, compiler, bits, chars
+########################################
+#     'defaultCodePage'.set(cp) # default ANSI code page (e.g. 936); OleStr path only
+########################################
 
 var _hostFacts  = 'host'.arg().getJson(fd: true);
 var _hostOs     = _hostFacts.os;

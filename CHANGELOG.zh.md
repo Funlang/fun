@@ -41,6 +41,9 @@
   因此这是判断键是否存在的唯一方式。数字键（或全数字字符串，与 `m[key]` 的解析保持一致）
   指向列表槽位，其他键则是集合成员。它与 `@count`、`@each`、`@add` 等原生集合方法同在
   `libset`。
+- 补齐标准库中一直漏列的内建方法说明：`lib-file` 的 `x.input(prompt, ok)`、`lib-type` 的
+  `a.eq(b)` / `a.type()`（从本地手工增补的副本同步），以及 `lib-host` 的 `n.arg()` /
+  `'host'.arg()` / `'defaultCodePage'.set(cp)`。仅注释改动，不影响行为。
 - 修复 Free Pascal 下布尔与数字比较不对称的问题：variant 比较按操作数顺序做隐式转换，
   于是 `true = 1` 为假而 `1 = true` 为真（`<`/`>`、`<=`/`>=`、`<>` 同理）。`varComp` 现在
   把布尔与数字统一按数值类型比较，`true` 取 -1（`VARIANT_BOOL`，与 Delphi/COM `VarCmp` 一致），

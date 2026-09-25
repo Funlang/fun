@@ -58,6 +58,11 @@ This project records notable changes in the style of [Keep a Changelog](https://
   numeric key (or an all-digit string, matching how `m[key]` resolves) addresses
   a list slot; any other key names a set member. It sits in `libset` beside the
   other native collection methods (`@count`, `@each`, `@add`).
+- Filled in standard-library built-in method docs that had gone unlisted:
+  `x.input(prompt, ok)` in `lib-file`, `a.eq(b)` / `a.type()` in `lib-type`
+  (synced from the local tree where they had been added by hand), and `n.arg()`
+  / `'host'.arg()` / `'defaultCodePage'.set(cp)` in `lib-host`. Comment-only,
+  no behavior change.
 - Fixed asymmetric Boolean vs number comparison under Free Pascal: the generic
   variant compare coerced its operands by order, so `true = 1` was false while
   `1 = true` was true (same for `<`/`>`, `<=`/`>=`, `<>`). `varComp` now coerces
