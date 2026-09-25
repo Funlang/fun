@@ -133,15 +133,11 @@ end fun;
 
 // SQL NULL test. FPC's `v = nil` is true for 0 and '' too (isNull treats a zero
 // number as empty), so it cannot be used to decide whether a bound value is
-// NULL: binding 0/FALSE stored NULL instead of 0. Encode the value as JSON for
-// a strict test (nil -> "[null]", 0 -> "[0]", '' -> [""]); only reached when the
-// loose test already said nil, so the normal binding path is unaffected.
+// NULL: binding 0/FALSE stored NULL instead of 0. `v.eq(nil)` is the
+// strict test, true only for nil/unassigned. Only reached when the loose
+// test already said nil, so the normal binding path is unaffected.
 fun _isNull(v)
-  try
-    result = [v].@toJson(json: true) = '[null]';
-  except
-    result = true;
-  end try;
+  result = v.eq(nil);
 end fun;
 
 fun _conn_str(cn)
