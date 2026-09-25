@@ -65,6 +65,31 @@ begin
   val^ := CSet(exp.asObj).count();
 end;
 
+// s.@has(key) -> true when the container has this key, even when its value is
+// nil. 'm[key]' cannot tell a missing key from a nil value ('m['b'] = nil' is
+// true for an absent key too), and 'key in m' scans the values instead of the
+// keys; this tests key presence alone. A numeric key addresses a list slot
+// exactly as m[key] does, any other key names a set member.
+procedure _has(env: CEnv; exp: CExp; exps: CExps; val: PValue);
+var
+  e: CExp;
+  s: CExps;
+  n, i: fun.int;
+begin
+  val^ := false;
+  e := CExps.Find(exps, '', 0);
+  if e = nil then exit;
+  s := CSet(exp.asObj).items;
+  if isNum(e.value, true) then
+  begin
+    n := CExps.Count(s);
+    i := calcIndex(e.asInt, n);
+    val^ := (i >= 0) and (i < n) and (s.Item[i] <> nil);
+  end
+  else
+    val^ := s.ItemById[e.asStr] <> nil;
+end;
+
 // s.@each(fun, reverse = false)
 procedure _each(env: CEnv; exp: CExp; exps: CExps; val: PValue);
 var
@@ -425,6 +450,7 @@ begin
   inherited Create;
   ids['@count']  := CExp.new(nil).parse(Int64(fun.uintptr(@_count)));
   ids['@length'] := CExp.new(nil).parse(Int64(fun.uintptr(@_count)));
+  ids['@has']    := CExp.new(nil).parse(Int64(fun.uintptr(@_has)));
   ids['@each']   := CExp.new(nil).parse(Int64(fun.uintptr(@_each)));
   ids['@add']    := CExp.new(nil).parse(Int64(fun.uintptr(@_add)));
   ids['@clone']  := CExp.new(nil).parse(Int64(fun.uintptr(@_clone)));

@@ -4,7 +4,7 @@
 ########################################
 # lib-set
 ########################################
-#   built-in (4)
+#   built-in (5)
 ########################################
 #     s.@count (     )
 #               'ptr'   # return pointer
@@ -12,6 +12,7 @@
 #     s.@each  (fun, reverse = false) # fun (val) or (val, key)
 #     s.@add   (v1, v2, ...)
 #     s.@clone ()
+#     s.@has   (key)  # true if the key is present, even when its value is nil
 ########################################
 
 var pathSet(set, path, value) = locate(set, path, value, 1);

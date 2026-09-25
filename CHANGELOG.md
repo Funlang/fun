@@ -51,6 +51,13 @@ This project records notable changes in the style of [Keep a Changelog](https://
   every float width -> 5, every string form -> 8. Both live in `libase`, apply
   to basic (non-object) values, and leave the loose `=` unchanged; `100+` is
   reserved for Fun-only object kinds.
+- Added key probing for collections: `s.@has(key)` is true when a list or set
+  has that key, even when the stored value is nil. `m[key]` cannot tell a
+  missing key from a nil value (both read as nil), and `key in m` scans values
+  instead of keys, so this is the only way to ask whether a key is present. A
+  numeric key (or an all-digit string, matching how `m[key]` resolves) addresses
+  a list slot; any other key names a set member. It sits in `libset` beside the
+  other native collection methods (`@count`, `@each`, `@add`).
 - Fixed asymmetric Boolean vs number comparison under Free Pascal: the generic
   variant compare coerced its operands by order, so `true = 1` was false while
   `1 = true` was true (same for `<`/`>`, `<=`/`>=`, `<>`). `varComp` now coerces
