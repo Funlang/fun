@@ -1748,7 +1748,17 @@ var
 begin
   if not fun2 then
   begin
-    result := inherited call(env, exps);
+    // Chained call: this node sits in a callee position, as in f(..)(..).
+    // Evaluate this call first, then dispatch its result as the callee -- the
+    // same pattern as CId.call/CId2.call dispatching on asObj (a fun2 partial,
+    // a CFun, a CModu and friends are CNode). A non-callable result keeps the
+    // legacy silent Null via inherited (CNode.call); diagnostics come later.
+    calc(env);
+    if asObj is CNode then
+      result := CNode(asObj).call(env, exps)
+    else
+      result := inherited call(env, exps)
+    ;
     exit;
   end;
   
