@@ -51,6 +51,13 @@ This project records notable changes in the style of [Keep a Changelog](https://
   every float width -> 5, every string form -> 8. Both live in `libase`, apply
   to basic (non-object) values, and leave the loose `=` unchanged; `100+` is
   reserved for Fun-only object kinds.
+- Fixed asymmetric Boolean vs number comparison under Free Pascal: the generic
+  variant compare coerced its operands by order, so `true = 1` was false while
+  `1 = true` was true (same for `<`/`>`, `<=`/`>=`, `<>`). `varComp` now coerces
+  a Boolean and a number to a common numeric type with `true` = -1
+  (`VARIANT_BOOL`, matching Delphi/COM `VarCmp`), so both operand orders agree.
+  The branch is FPC-only (`{$IfDef FPC}`); Delphi's `VarCmp` was already
+  symmetric. Covered by fun/test/bool-num-cmp.fun (local suite: 89/89).
 
 ## [9.0] - 2026
 

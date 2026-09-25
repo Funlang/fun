@@ -983,6 +983,7 @@ end;
 function varComp(v1, v2: PValue; isCase: fun.bool): ECompResult;
 var
   i: fun.int;
+  d1, d2: double;
   a, b: PData;
   anil, bnil: fun.bool;
 const
@@ -1063,6 +1064,44 @@ begin
     result := ECbool[(a.VType = b.VType) and (a.VPointer = b.VPointer)]
   else if (b.VType >= VarObject) then
     result := NE
+  {$EndIf}
+
+  {$IfDef FPC}
+  // Boolean vs number: align with Delphi/COM VarCmp - both operands
+  // are coerced to a common numeric type (VARIANT_BOOL True = -1), so
+  // the result is symmetric regardless of operand order. FPC generic
+  // variant compare converts by operand order instead (true = 1 is
+  // False while 1 = true is True).
+  else if ((a.VType = varBoolean) and (b.VType in [varInteger, varDouble])) or
+          ((a.VType in [varInteger, varDouble]) and (b.VType = varBoolean)) then
+  begin
+    // NB: do NOT use -ord(x.VBoolean <> false) here - the <> of two
+    // WordBool operands stays WordBool and ord(WordBool True) = -1, so
+    // -ord(...) evaluates to +1. Plain if/else keeps this obvious.
+    if a.VType = varBoolean then
+    begin
+      if a.VBoolean then d1 := -1 else d1 := 0;
+    end
+    else if a.VType = varInteger then
+      d1 := a.VInteger
+    else
+      d1 := a.VDouble;
+    if b.VType = varBoolean then
+    begin
+      if b.VBoolean then d2 := -1 else d2 := 0;
+    end
+    else if b.VType = varInteger then
+      d2 := b.VInteger
+    else
+      d2 := b.VDouble;
+    if d1 = d2 then
+      result := EQ
+    else if d1 < d2 then
+      result := LT
+    else
+      result := GT
+    ;
+  end
   {$EndIf}
 
   // String

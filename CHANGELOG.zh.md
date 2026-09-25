@@ -36,6 +36,11 @@
   编号对标 COM `VARENUM`（`VT_*`，即 Delphi `VType` 与 ADO `DataTypeEnum` 的底层表），并把运行时
   依赖平台的标签归一化：所有整型宽度 -> 3，所有浮点宽度 -> 5，所有字符串形态 -> 8。两者都位于
   `libase`，只作用于基本（非对象）值，宽松的 `=` 保持不变；`100+` 预留给 Fun 专有的对象类型。
+- 修复 Free Pascal 下布尔与数字比较不对称的问题：variant 比较按操作数顺序做隐式转换，
+  于是 `true = 1` 为假而 `1 = true` 为真（`<`/`>`、`<=`/`>=`、`<>` 同理）。`varComp` 现在
+  把布尔与数字统一按数值类型比较，`true` 取 -1（`VARIANT_BOOL`，与 Delphi/COM `VarCmp` 一致），
+  两种顺序结果一致。该分支仅在 FPC 下生效（`{$IfDef FPC}`）；Delphi 的 `VarCmp` 本就对称。
+  由 fun/test/bool-num-cmp.fun 覆盖（本地套件：89/89）。
 
 ## [9.0] - 2026
 
