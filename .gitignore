@@ -47,8 +47,13 @@
 src/prj/fun/funcmd
 src/prj/fun/.ffi/
 
-# Convenience copy of the Linux build in the runtime folder (make-linux-x86_64.sh)
+# Convenience copy of the Linux build in the runtime folder (make-linux-x86_64.sh),
+# plus any scratch copies kept alongside it while comparing builds.
 /fun/funcmd
+/fun/funcmd[0-9]*
+
+# Local transcripts from running the interactive demos (scratch output)
+/fun/demo/*.fun.log
 
 # Generated Yacc/Lex output (keep the .y / .l / .ebnf sources)
 src/parse/dyl/yyparse.cod
