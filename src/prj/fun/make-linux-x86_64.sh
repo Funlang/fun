@@ -44,6 +44,14 @@ set -e
 HERE="$(cd "$(dirname "$0")" && pwd)"
 cd "$HERE"
 
+# --- Optional: refresh src/core/version.inc from git --------------------------
+# The numeric version stamp is generated, not compiled in, so it only changes
+# when you regenerate it. Off by default to keep builds reproducible; set
+# FUN_GEN_VERSION=1 to refresh it from the git commit date before building.
+if [ -n "$FUN_GEN_VERSION" ]; then
+    sh "$HERE/gen-version.sh"
+fi
+
 # --- Resolve the Free Pascal driver ------------------------------
 if [ -n "$FPC" ]; then
     FPC_BIN="$FPC"

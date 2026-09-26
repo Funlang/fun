@@ -161,7 +161,7 @@ end;
 procedure PrintVer();
 begin
   Println('');
-  Println('Fun 9.0, Copyright (c) 2026, https://funlang.org');
+  Println('Fun ' + funRelease + ', Copyright (c) 2026, https://funlang.org');
   Println('Usage:');
   Println('  fun.exe [-fun:]<file.fun or .foo/.fxx> [-key:<key.ini>] [-log[:<log.txt>]] [-gui] [-v]');
   Println('');
