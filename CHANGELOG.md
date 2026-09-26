@@ -6,6 +6,15 @@ This project records notable changes in the style of [Keep a Changelog](https://
 
 ## [Unreleased]
 
+- Centralized the runtime version onto a compile-time constant: `src/core/fun.pas`
+  now defines `funVersion` (numeric build stamp, date-coded YYYYMMDD) and
+  `funRelease` (human-readable release string, e.g. `'9.0'`). A script can probe
+  whether the running interpreter is new enough through either of two paths, and
+  both read the same constant so they cannot drift: `N.time()` (returns
+  `funVersion` for N in 2010..2099) and the new `version` field of
+  `'host'.arg()`. Previously the version was a hardcoded literal inside `_time`
+  and `'host'.arg()` exposed only the readable `fun` string. `lib-host-test.fun`
+  now asserts the two paths agree.
 - First open-source release of the Fun core and standard library source.
 - The command-line `funcmd` now writes diagnostics to stderr and exits non-zero
   (1) on a parse or runtime error, so `a.fun && b.fun`, CI jobs and cron alarms

@@ -27,7 +27,7 @@
 #   built-in (2)
 ########################################
 #     n.arg()                   # argv[n]: 0 = executable, 1 = script
-#     'host'.arg()              # host facts (FD): fun, os, cpu, compiler, bits, chars
+#     'host'.arg()              # host facts (FD): fun, os, cpu, compiler, bits, chars, version
 ########################################
 #     'defaultCodePage'.set(cp) # default ANSI code page (e.g. 936); OleStr path only
 ########################################

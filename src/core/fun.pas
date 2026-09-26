@@ -67,6 +67,16 @@ type
   {$EndIf}
 
 const
+  // Fun runtime version. Single source of truth for the two probe paths a
+  // script can use to decide whether the running interpreter is new enough:
+  //   * `N.time()` for any N in 2010..2099 returns funVersion (see libase._time)
+  //   * `'host'.arg()` exposes the same number in its `version` field
+  // Keeping them on one constant means they cannot drift apart.
+  //   funVersion: numeric build stamp, date-coded YYYYMMDD.
+  //   funRelease: human-readable major.minor release string.
+  funVersion = 20260602;
+  funRelease = '9.0';
+
   {$IfDef FPC}
   VarObject = $201;//VarError;
   VarObjNew = $202;//VarError;

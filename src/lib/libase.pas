@@ -79,10 +79,13 @@ end;
 //   compiler  -> compiler + version,e.g. "fpc 3.2.2" | "delphi"
 //   bits      -> cpu word size,     e.g. 64 | 32
 //   chars     -> char width in bytes (SizeOf(Char)), e.g. 1 | 2
+//   version   -> numeric build stamp, YYYYMMDD; identical to what N.time()
+//                returns for any N in 2010..2099, so a script can probe either
+//                way (both read the funVersion constant in core/fun.pas).
 //
 // Because 'fun' is a Fun keyword, .fun code reads it back as
-//   var h = 'host'.arg().getJson(fd:true);   // h.os, h.cpu, h.compiler, h.bits, h.chars
-//   var v = h['fun'];                        // version (bracket access)
+//   var h = 'host'.arg().getJson(fd:true);   // h.os, h.cpu, h.compiler, h.bits, h.chars, h.version
+//   var v = h['fun'];                        // version string (bracket access)
 // or simply parses the text with a regex.
 function _hostOs: fun.str;
 begin
@@ -152,12 +155,13 @@ begin
   // FD values stay unquoted where unambiguous; only the numeric-looking
   // version string ("9.0") keeps quotes so it is read back as a string, not 9.0.
   result :=
-      'fun '      + '"9.0"' + #10 +
+      'fun '      + '"' + funRelease + '"' + #10 +
       'os '       + _hostOs       + #10 +
       'cpu '      + _hostCpu      + #10 +
       'compiler ' + _hostCompiler + #10 +
       'bits '     + IntToStr(SizeOf(fun.ptr) * 8) + #10 +
-      'chars '    + IntToStr(SizeOf(fun.char));
+      'chars '    + IntToStr(SizeOf(fun.char)) + #10 +
+      'version '  + IntToStr(funVersion);
 end;
 
 //==============================================================
@@ -577,7 +581,7 @@ begin
     if i = 0 then
       val^ := Time
     else if (i >= 2010) and (i < 2100) then
-      val^ := 20260602 // todo: runtime version
+      val^ := funVersion // from core/fun.pas: one source for both probes
     else if i < 0 then
     begin
     {$IfNDef Linux}
