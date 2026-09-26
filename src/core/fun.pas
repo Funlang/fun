@@ -68,8 +68,8 @@ type
 
 const
   // Runtime version facts (funVersion, funRelease), kept in a separate include
-  // so the numeric stamp can be refreshed from git metadata:
-  //   sh src/prj/fun/gen-version.sh
+  // so the numeric stamp can be regenerated without touching this unit:
+  //   fun src/prj/fun/gen-version.fun
   // Both the `N.time()` probe and 'host'.arg() read these, so the two paths
   // cannot drift apart. See src/core/version.inc.
   {$I version.inc}

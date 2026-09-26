@@ -44,12 +44,19 @@ set -e
 HERE="$(cd "$(dirname "$0")" && pwd)"
 cd "$HERE"
 
-# --- Optional: refresh src/core/version.inc from git --------------------------
+# --- Optional: refresh src/core/version.inc (written in Fun) ----------------
 # The numeric version stamp is generated, not compiled in, so it only changes
 # when you regenerate it. Off by default to keep builds reproducible; set
-# FUN_GEN_VERSION=1 to refresh it from the git commit date before building.
+# FUN_GEN_VERSION=1 to run the generator first. The generator is a Fun script
+# and needs a working interpreter, so this uses a previously built funcmd
+# (the committed version.inc is used on a clean checkout).
 if [ -n "$FUN_GEN_VERSION" ]; then
-    sh "$HERE/gen-version.sh"
+    PRE_FUNCMD="$(cd "$HERE/../../.." && pwd)/fun/funcmd"
+    if [ -x "$PRE_FUNCMD" ]; then
+        "$PRE_FUNCMD" "$HERE/gen-version.fun"
+    else
+        echo "FUN_GEN_VERSION set, but no prebuilt funcmd yet; skipping version regen" >&2
+    fi
 fi
 
 # --- Resolve the Free Pascal driver ------------------------------

@@ -8,11 +8,11 @@
 
 - 运行版本探测：版本号改到生成式 include `src/core/version.inc`（`funVersion`，数值
   YYYYMMDD；`funRelease`，人工维护的语言版本串），由 `fun.pas` 用 `{$I}` 引入。
-  用 `sh src/prj/fun/gen-version.sh` 从 git 刷新（构建时可用 `FUN_GEN_VERSION=1`）；
-  取 HEAD 提交日期，所以跟着提交前进，但同一提交可复现。脚本可用两条路径探测当前
-  解释器，且读的是同一个常量：`N.time()`（N 在 2010..2099 时返回 `funVersion`）与
-  `'host'.arg()` 新增的 `version` 字段。此前该数字是 `_time` 里的硬编码字面量，
-  `'host'.arg()` 也只有可读串 `fun`。回归 `lib-host-test.fun` 断言两条路径相等。
+  用纯 Fun 脚本重新生成：`fun src/prj/fun/gen-version.fun [YYYYMMDD] ["release"]`，
+  不依赖 shell/git，Windows 与 Linux 同一条命令。不传日期就盖当天日期（发版时传显式日期保证可复现）。
+  脚本可用两条路径探测当前解释器，且读的是同一个常量：`N.time()`（N 在 2010..2099 时返回
+  `funVersion`）与 `'host'.arg()` 新增的 `version` 字段。此前该数字是 `_time` 里的硬编码
+  字面量，`'host'.arg()` 也只有可读串 `fun`。回归 `lib-host-test.fun` 断言两条路径相等。
 - 首次以开源形式发布 Fun 核心与标准库源码。
 - 命令行 `funcmd` 现在把诊断信息写入 stderr，并在解析或运行时出错时返回非零退出码 (1)，
   使 `a.fun && b.fun`、CI 任务与 cron 告警不再把失败脚本当成成功。运行时错误前缀为
