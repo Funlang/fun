@@ -19,6 +19,14 @@ This project records notable changes in the style of [Keep a Changelog](https://
   standard-error handle (not the RTL `StdErr`/`ErrOutput` text file, which
   Delphi 7 does not declare), so the driver builds unchanged on Delphi 7 and
   Free Pascal.
+- Treat end of input as an implicit statement terminator: a final statement
+  written without its trailing `;` is now parsed and executed instead of being
+  silently dropped. The lexer previously emitted no token at end of input, so
+  the pending statement never reduced and the script exited 0 with no output
+  (for example, a program whose last line is `?. x` printed nothing). Only the
+  end of input is affected; a missing `;` between statements is still a syntax
+  error. The change lives in the lexer runtime (`src/parse/lib/lexlib.pas`) and
+  touches no generated parse/lex tables.
 - Added `README.md`, `CONTRIBUTING.md`, `.gitignore`, `.gitattributes`.
 - Hardened string/list indexing and byte access against out-of-bounds memory
   access: out-of-range writes now raise, out-of-range reads yield a safe default

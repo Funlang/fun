@@ -651,15 +651,6 @@ var
   s: fun.str;
   e: CExp;
 begin
-  {$IfDef CompSave}
-  e := CExps.Find(exps, '', 0);
-  if (e <> nil) and (e.asObj is CNode) then
-  begin
-    s := '';
-    CCSaver.SaveFoo(e.asObj, s);
-  end
-  else
-  {$EndIf}
   s := CExps.FindAsVal(exps, '', 0, '');
   CIO.Save(exp.asStr, s, CExps.FindAsVal(exps, 'cp', 1, 0), CExps.FindAsVal(exps, 'append', 2, false));
 end;

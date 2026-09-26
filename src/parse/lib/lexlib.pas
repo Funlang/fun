@@ -44,6 +44,7 @@ const
 var
 
   yystext:   string;
+  yysemi:    boolean;
   yysstate, yylstate: integer;
   yymatches: integer;
   yystack:   array [1..max_matches] of integer;
@@ -160,6 +161,18 @@ begin
     //put_char(yyactchar);
     Result := True;
   end
+  else if not yysemi then
+  begin
+    // End of input: hand the parser one implicit ';' so a final statement
+    // written without its terminating semicolon is still reduced and run.
+    // Only the end of input is affected; a missing ';' between statements
+    // stays a syntax error (see CHANGELOG).
+    yysemi   := True;
+    yylstate := 1;
+    yyretval := Ord(';');
+    yydone   := True;
+    Result   := True;
+  end
   else begin
     yylstate := 1;
     Result   := False;
@@ -169,6 +182,7 @@ end;
 
 procedure yyclear;
 begin
+  yysemi     := False;
   yysstate   := 0;
   yylstate   := 1;
   yylastchar := #0;
