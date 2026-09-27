@@ -1428,8 +1428,6 @@ var
                             else bs := 0;
               Inc(i);
             until (i > ii) or (s[i] = c) and ((bs mod 2 = 0) or not json);
-            if not ((i <= ii) and (s[i] = c)) then
-              StrictFail('string not closed', oi);
             if (i <= ii) and (s[i] = c) then
               kv := Copy(s, oi + 1, i - oi - 1)
             else
