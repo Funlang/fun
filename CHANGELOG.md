@@ -104,7 +104,8 @@ This project records notable changes in the style of [Keep a Changelog](https://
   Strict strings reject raw control characters and validate escapes (`\uXXXX`
   needs four hex digits; surrogates need not pair). Numbers stay lenient by
   design - `.5`, `03` and `1.` are still accepted, because real-world JSON
-  carries them - while lenient `json:true` and FD parsing are byte-for-byte
+  carries them (a number token with no digit at all, such as a lone `.` or `-`,
+  is rejected) - while lenient `json:true` and FD parsing are byte-for-byte
   unchanged.
 
 ## [9.0] - 2026

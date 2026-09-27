@@ -1464,6 +1464,15 @@ var
           kv := Copy(s, oi, i - oi);
           if s[i] in ['$', '_', 'A'..'Z', 'a'..'z'] then
             StrictFail('invalid number ''' + kv + '''', oi);
+          // strict: a number token with no digit at all ('.', '-', '--') is
+          // malformed. Digit-bearing forms stay lenient on purpose (.5, 03, 1.).
+          if strict then
+          begin
+            p := 1;
+            while (p <= Length(kv)) and not (kv[p] in ['0'..'9']) do Inc(p);
+            if p > Length(kv) then
+              StrictFail('invalid number ''' + kv + '''', oi);
+          end;
           CValue(vv) := CParser.StrToNum(kv);
           st := 1;
           Continue;
