@@ -1354,11 +1354,13 @@ var
           StrictFail('string quotes must be double quotes', oi);
         if c = '@' then
           StrictFail('unexpected char ''@''', oi);
-        // A value already completed at the top level: nothing but whitespace
-        // may follow (rejects ',', a second ']'/'}', and a trailing scalar).
-        if (st = 1) and (PopCnt = PushCnt) and not (c in [' ', #9, #10, #13]) then
-          StrictFail('unexpected trailing value', oi);
         if not (c in [' ', #9, #10, #13]) then
+        begin
+          // A value already completed at the top level: nothing but whitespace
+          // may follow (rejects ',', a second ']'/'}', and a trailing scalar).
+          if (st = 1) and (PopCnt = PushCnt) then
+            StrictFail('unexpected trailing value', oi);
+          // Separator grammar for the current state.
           case st of
             1: if not (c in [',', ']', '}']) then
                  StrictFail('missing separator', oi);
@@ -1371,6 +1373,13 @@ var
             4: if c in [',', ']', '}', ':'] then
                  StrictFail('missing value for key ''' + k + '''', oi);
           end;
+          // In an object, states 0/2 expect a key: the only legal starts are a
+          // string (or '}' closing an empty object). One check here covers
+          // every value branch (number / bareword / '[' / '{') at once.
+          if (Level > 0) and StackObj[Level - 1] and (st in [0, 2]) and
+             (c <> '"') and not ((st = 0) and (c = '}')) then
+            StrictFail('object key must be a string', oi);
+        end;
       end;
       case c of
         '"', '''', '`':
@@ -1467,8 +1476,6 @@ var
 
         '1'..'9', '-', '.':
   _NUM: begin
-          if strict and (Level > 0) and StackObj[Level -1] and (st in [0, 2]) then
-            StrictFail('object key must be a string', oi);
           repeat
             Inc(i);
           until not (s[i] in ['0'..'9', '.', 'e', 'E', '-', '+']) or (i > ii);
@@ -1501,8 +1508,6 @@ var
 
         '$', '_', 'A'..'Z', 'a'..'z':
   _KEY: begin
-          if strict and (Level > 0) and StackObj[Level -1] and (st in [0, 2]) then
-            StrictFail('object key must be a string', oi);
           repeat
             Inc(i);
           until not (s[i] in ['$', '_', '@'..'Z', 'a'..'z', '0'..'9']) or (i > ii);
@@ -1543,8 +1548,6 @@ var
 
         '[', '{':
         begin
-          if strict and (Level > 0) and StackObj[Level -1] and (st in [0, 2]) then
-            StrictFail('object key must be a string', oi);
           Push(k, c = '{');
           Inc(PushCnt);
           k  := '';
