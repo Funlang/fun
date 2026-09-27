@@ -1464,8 +1464,6 @@ var
               Inc(i);
             until not (s[i] in ['0'..'9', 'A'..'F', 'a'..'f']) or (i > ii);
             kv := Copy(s, oi, i - oi);
-            if s[i] in ['$', '_', 'A'..'Z', 'a'..'z'] then
-              StrictFail('invalid number ''' + kv + '''', oi);
             CValue(vv) := CParser.StrToNum(kv);
             st := 1;
             Continue;
@@ -1572,10 +1570,10 @@ var
       end;
       Inc(i);
     end;
-    if PopCnt > PushCnt then
-      StrictFail('unbalanced close', i);
-    if PopCnt < PushCnt then
-      StrictFail('unclosed bracket', i);
+    // Any bracket-count mismatch left at end of input (one message is enough:
+    // too many closes and too few are both "brackets don't balance").
+    if PopCnt <> PushCnt then
+      StrictFail('unbalanced brackets', i);
     // End of input terminates a pending entry just like a trailing separator,
     // so the last key/value (or set element) is kept instead of dropped.
     // A bare scalar is a legal root (RFC 8259), so commit unconditionally.
