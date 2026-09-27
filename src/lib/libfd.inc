@@ -34,11 +34,18 @@ var
   key: fun.str;
   val: CData;
   parseError: fun.bool;
+  parseErrMsg: fun.str;
+  parseErrPos: fun.int;
   kvd: TCharSet;
 
   procedure SyntaxError(const msg: fun.str);
   begin
     parseError := True;
+    if parseErrMsg = '' then
+    begin
+      parseErrMsg := msg;
+      parseErrPos := pos;
+    end;
   end;
 
   procedure SkipWhile(const chSet: TCharSet);
@@ -314,6 +321,9 @@ begin
   end;
 
   if parseError then
-    Root := nil;
+  begin
+    StrictFail(parseErrMsg, parseErrPos);
+    ReleaseTree;
+  end;
   while Level > 1 do Pop;
 end;

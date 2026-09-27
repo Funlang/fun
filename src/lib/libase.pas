@@ -1218,7 +1218,7 @@ begin
 end;
 
 //==============================================================
-function _ParseJson(const s: fun.str; json: fun.bool = false; fd: fun.bool = false; sse: fun.bool = false): CNode;
+function _ParseJson(const s: fun.str; json: fun.bool = false; fd: fun.bool = false; sse: fun.bool = false; strict: fun.bool = false): CNode;
 const
   // Deepest allowed [] / {} nesting (shared by the JSON scan and the FD scan
   // below). Parsing itself is iterative, but the resulting tree is destroyed,
@@ -1229,6 +1229,29 @@ var
   Root: CSet;
   Level: fun.int;
   Stack: array of fun.ptr;
+  PushCnt, PopCnt: fun.int;
+  curPos: fun.int;
+  expectVal: fun.bool;
+
+  // Drop the partially built tree and the parse stack. Called on any hard
+  // error so an aborted parse does not leak the nodes it already created.
+  procedure ReleaseTree;
+  begin
+    if Root <> nil then del(Root);
+    Root := nil;
+    SetLength(Stack, 0);
+    Level := 0;
+  end;
+
+  // Single strict-failure exit: no-op unless strict, otherwise release the
+  // partial tree and raise through the same EBase channel as 'nesting too
+  // deep'. Call sites pass only the message and the byte position.
+  procedure StrictFail(const msg: fun.str; const at: fun.int);
+  begin
+    if not strict then Exit;
+    ReleaseTree;
+    raise EBase.Create('strict: ' + msg + ' @ ' + IntToStr(at));
+  end;
 
   function Peek(): CExps;
   begin
@@ -1256,8 +1279,7 @@ var
     begin
       // Release the partial tree (depth is capped at MaxNestDepth, so this is
       // safe) and report an error instead of building an unusable structure.
-      if Root <> nil then del(Root);
-      Root := nil;
+      ReleaseTree;
       raise EBase.Create('nesting too deep (max ' + IntToStr(MaxNestDepth) + ')');
     end;
 
@@ -1284,7 +1306,10 @@ var
 
   procedure Pop();
   begin
-    if Level > 1 then Dec(Level);
+    Inc(PopCnt);
+    if Level > 1 then Dec(Level)
+    else if Level = 0 then
+      StrictFail('unbalanced close', curPos);
   end;
 
   procedure ParseJSON;
@@ -1298,10 +1323,20 @@ var
   begin
     ii := Length(s);
     i  := 1;
+    vv.VType := VarEmpty;
     while i <= ii do
     begin
       c  := s[i];
       oi := i;
+      curPos := i;
+      // A separator directly after ':' means the key never got a value.
+      if expectVal and (c in [',', ';', ']', '}']) then
+        StrictFail('missing value for key ''' + k + '''', oi);
+      // expectVal survives only across whitespace; every other char clears it
+      // (':' re-arms it below), so it is assigned once here instead of in
+      // every branch below.
+      if not (c in [' ', #9, #10, #13]) then
+        expectVal := false;
       case c of
         '"', '''', '`':
   _STR: begin
@@ -1310,11 +1345,13 @@ var
             if s[i] = '\' then Inc(bs)
                           else bs := 0;
             Inc(i);
-          until (i >= ii) or (s[i] = c) and ((bs mod 2 = 0) or not json);
-          if i = ii then
-            kv := Copy(s, oi + 1, i - oi)
-          else
+          until (i > ii) or (s[i] = c) and ((bs mod 2 = 0) or not json);
+          if not ((i <= ii) and (s[i] = c)) then
+            StrictFail('string not closed', oi);
+          if (i <= ii) and (s[i] = c) then
             kv := Copy(s, oi + 1, i - oi - 1)
+          else
+            kv := Copy(s, oi + 1, i - oi)
           ;
           if s[oi-1] = '@' then
             CValue(vv) := StrToDateTime(kv)
@@ -1336,8 +1373,10 @@ var
             Inc(i, 2);
             repeat
               Inc(i);
-            until not (s[i] in ['0'..'9', 'A'..'F', 'a'..'f']) or (i >= ii);
+            until not (s[i] in ['0'..'9', 'A'..'F', 'a'..'f']) or (i > ii);
             kv := Copy(s, oi, i - oi);
+            if s[i] in ['$', '_', 'A'..'Z', 'a'..'z'] then
+              StrictFail('invalid number ''' + kv + '''', oi);
             CValue(vv) := CParser.StrToNum(kv);
             Continue;
           end
@@ -1348,8 +1387,10 @@ var
   _NUM: begin
           repeat
             Inc(i);
-          until not (s[i] in ['0'..'9', '.', 'e', 'E', '-', '+']) or (i >= ii);
+          until not (s[i] in ['0'..'9', '.', 'e', 'E', '-', '+']) or (i > ii);
           kv := Copy(s, oi, i - oi);
+          if s[i] in ['$', '_', 'A'..'Z', 'a'..'z'] then
+            StrictFail('invalid number ''' + kv + '''', oi);
           CValue(vv) := CParser.StrToNum(kv);
           Continue;
         end;
@@ -1368,7 +1409,7 @@ var
   _KEY: begin
           repeat
             Inc(i);
-          until not (s[i] in ['$', '_', '@'..'Z', 'a'..'z', '0'..'9']) or (i >= ii);
+          until not (s[i] in ['$', '_', '@'..'Z', 'a'..'z', '0'..'9']) or (i > ii);
           kv := Copy(s, oi, i - oi);
           if (kv = 'null') or (kv = 'nil') then
             CValue(vv) := NullValue
@@ -1377,12 +1418,18 @@ var
           else if kv = 'false' then
             CValue(vv) := false
           else
+          begin
+            StrictFail('bareword ''' + kv + ''' not allowed', oi);
             CValue(vv) := kv;
+          end;
           Continue;
         end;
 
         ':', '=':
+        begin
           k  := kv;
+          expectVal := true;
+        end;
 
         ',', ';':
         begin
@@ -1395,6 +1442,7 @@ var
         '[', '{':
         begin
           Push(k, c = '{');
+          Inc(PushCnt);
           k  := '';
           kv := '';
           kk := '';
@@ -1408,8 +1456,23 @@ var
           kk := '';
           Pop();
         end;
+        else
+          if not (c in [' ', #9, #10, #13]) then
+            StrictFail('unexpected char ''' + c + '''', oi);
       end;
       Inc(i);
+    end;
+    if PopCnt > PushCnt then
+      StrictFail('unbalanced close', i);
+    if PopCnt < PushCnt then
+      StrictFail('unclosed bracket', i);
+    // End of input terminates a pending entry just like a trailing separator,
+    // so the last key/value (or set element) is kept instead of dropped.
+    if k + kv + kk <> '' then
+    begin
+      if (k = '') and (kk = '') then
+        StrictFail('unexpected trailing value', i);
+      GetVal(k, @vv);
     end;
   end;
 
@@ -1418,6 +1481,10 @@ var
 begin
   Root  := nil;
   Level := 0;
+  PushCnt := 0;
+  PopCnt := 0;
+  curPos := 0;
+  expectVal := false;
 
   if fd then
   begin
@@ -1434,8 +1501,10 @@ end;
 procedure _GetJson(env: CEnv; exp: CExp; exps: CExps; val: PValue);
 var
   n: CNode;
+  lv: fun.int;
 begin
-  n := _ParseJson(exp.asStr, CExps.FindAsVal(exps, 'json', 0, false), CExps.FindAsVal(exps, 'fd', 1, false), CExps.FindAsVal(exps, 'sse', 2, false));
+  lv := CExps.FindAsVal(exps, 'json', 0, 0);
+  n := _ParseJson(exp.asStr, lv <> 0, CExps.FindAsVal(exps, 'fd', 1, false), CExps.FindAsVal(exps, 'sse', 2, false), lv >= 2);
   if n = nil then n := CNew.new(nil).parse(CExps.create);
   setObj(val, n, VarObjNew); del(n);
 end;
