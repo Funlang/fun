@@ -1375,51 +1375,57 @@ var
       case c of
         '"', '''', '`':
   _STR: begin
-          bs := 0;
-          repeat
-            if s[i] = '\' then Inc(bs)
-                          else bs := 0;
-            Inc(i);
-          until (i > ii) or (s[i] = c) and ((bs mod 2 = 0) or not json);
-          if not ((i <= ii) and (s[i] = c)) then
-            StrictFail('string not closed', oi);
-          if (i <= ii) and (s[i] = c) then
-            kv := Copy(s, oi + 1, i - oi - 1)
-          else
-            kv := Copy(s, oi + 1, i - oi)
-          ;
-          // strict strings: RFC escapes only, and no raw control characters.
-          // esc() is the *decoder* (used by lenient json and fd too); it also
-          // accepts the non-RFC extensions (\xHH, \', \`) and passes unknown
-          // escapes through as '\'+char, so it never rejects. This gate checks
-          // the raw text before decoding; esc itself is untouched, keeping
-          // lenient json/fd byte-for-byte unchanged.
           if strict then
           begin
-            bs := oi + 1;
-            while bs < i do
+            // strict strings, one pass: walk to the closing quote while
+            // enforcing RFC 8259 string syntax (no raw control chars, and only
+            // the RFC escapes). esc() below still performs the single decode;
+            // folding the checks in here avoids a separate validation
+            // traversal. In strict only '"' reaches this label (''' and '`'
+            // are rejected by the pre-check above).
+            i := oi + 1;
+            while i <= ii do
             begin
-              if s[bs] < #32 then
-                StrictFail('raw control char in string', bs);
-              if s[bs] = '\' then
+              if s[i] = c then Break;
+              if s[i] < #32 then
+                StrictFail('raw control char in string', i);
+              if s[i] = '\' then
               begin
-                Inc(bs);
-                if bs >= i then
-                  StrictFail('unterminated escape', bs);
-                if not (s[bs] in ['"', '\', '/', 'b', 'f', 'n', 'r', 't', 'u']) then
-                  StrictFail('invalid escape ''\' + s[bs] + '''', bs);
-                if s[bs] = 'u' then
+                Inc(i);
+                if i > ii then Break;      // unterminated, reported below
+                if not (s[i] in ['"', '\', '/', 'b', 'f', 'n', 'r', 't', 'u']) then
+                  StrictFail('invalid escape ''\' + s[i] + '''', i);
+                if s[i] = 'u' then
                 begin
-                  if bs + 4 >= i then
-                    StrictFail('invalid \u escape', bs);
+                  if i + 4 > ii then
+                    StrictFail('invalid \u escape', i);
                   for p := 1 to 4 do
-                    if not (s[bs + p] in ['0'..'9', 'A'..'F', 'a'..'f']) then
-                      StrictFail('invalid \u escape', bs);
-                  Inc(bs, 4);
+                    if not (s[i + p] in ['0'..'9', 'A'..'F', 'a'..'f']) then
+                      StrictFail('invalid \u escape', i);
+                  Inc(i, 4);
                 end;
               end;
-              Inc(bs);
+              Inc(i);
             end;
+            if not ((i <= ii) and (s[i] = c)) then
+              StrictFail('string not closed', oi);
+            kv := Copy(s, oi + 1, i - oi - 1);
+          end
+          else
+          begin
+            bs := 0;
+            repeat
+              if s[i] = '\' then Inc(bs)
+                            else bs := 0;
+              Inc(i);
+            until (i > ii) or (s[i] = c) and ((bs mod 2 = 0) or not json);
+            if not ((i <= ii) and (s[i] = c)) then
+              StrictFail('string not closed', oi);
+            if (i <= ii) and (s[i] = c) then
+              kv := Copy(s, oi + 1, i - oi - 1)
+            else
+              kv := Copy(s, oi + 1, i - oi)
+            ;
           end;
           if (Level > 0) and StackObj[Level -1] and (st in [0, 2]) then
             st := 3                          // this string is an object key
