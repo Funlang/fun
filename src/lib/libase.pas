@@ -1389,6 +1389,11 @@ var
             kv := Copy(s, oi + 1, i - oi)
           ;
           // strict strings: RFC escapes only, and no raw control characters.
+          // esc() is the *decoder* (used by lenient json and fd too); it also
+          // accepts the non-RFC extensions (\xHH, \', \`) and passes unknown
+          // escapes through as '\'+char, so it never rejects. This gate checks
+          // the raw text before decoding; esc itself is untouched, keeping
+          // lenient json/fd byte-for-byte unchanged.
           if strict then
           begin
             bs := oi + 1;
