@@ -89,6 +89,23 @@ This project records notable changes in the style of [Keep a Changelog](https://
   (`VARIANT_BOOL`, matching Delphi/COM `VarCmp`), so both operand orders agree.
   The branch is FPC-only (`{$IfDef FPC}`); Delphi's `VarCmp` was already
   symmetric. Covered by fun/test/bool-num-cmp.fun (local suite: 89/89).
+- `str.getJson(json: 2)` now enforces RFC 8259 separator grammar, not just the
+  unclosed / bracket-imbalance / trailing-value cases. One separator state
+  machine replaces the old "after ':'" flag: trailing commas (`{"a":1,}`),
+  leading or doubled commas (`[,1]`, `[1,,2]`), missing commas (`[1 2]`,
+  `{"a":1 "b":2}`), a missing or doubled colon (`{"a" 1}`, `{"a"::1}`),
+  `;`/`=` separators, single-quote / backtick strings, `@` date literals, hex
+  numbers (`0xff`), `nil`, and non-string object keys (`{a:1}`, `{1:2}`,
+  `{[1]:2}`) are all rejected. Closing brackets are matched against the open
+  container (`[1,2}`, `{"a":1]`), a completed top-level value rejects any
+  trailing input (`{"a":1} 2`, `[1,2] "x"`), and an empty or whitespace-only
+  document raises `no JSON value`. A bare scalar is now a legal root (`20`,
+  `"hi"`, `true`, `null`), which strict mode previously rejected by mistake.
+  Strict strings reject raw control characters and validate escapes (`\uXXXX`
+  needs four hex digits; surrogates need not pair). Numbers stay lenient by
+  design - `.5`, `03` and `1.` are still accepted, because real-world JSON
+  carries them - while lenient `json:true` and FD parsing are byte-for-byte
+  unchanged.
 
 ## [9.0] - 2026
 

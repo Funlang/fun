@@ -1229,9 +1229,12 @@ var
   Root: CSet;
   Level: fun.int;
   Stack: array of fun.ptr;
+  StackObj: array of fun.bool;   // parallel to Stack: True where that open
+                                 // container is an object; used by strict for
+                                 // the key-slot and close-bracket checks
   PushCnt, PopCnt: fun.int;
   curPos: fun.int;
-  expectVal: fun.bool;
+  st: fun.int;                   // strict separator state (see ParseJSON)
 
   // Drop the partially built tree and the parse stack. Called on any hard
   // error so an aborted parse does not leak the nodes it already created.
@@ -1240,6 +1243,7 @@ var
     if Root <> nil then del(Root);
     Root := nil;
     SetLength(Stack, 0);
+    SetLength(StackObj, 0);
     Level := 0;
   end;
 
@@ -1301,7 +1305,9 @@ var
     end;
     Inc(Level);
     SetLength(Stack, Level);
+    SetLength(StackObj, Level);
     Stack[Level -1] := n.items;
+    StackObj[Level -1] := isObj;
   end;
 
   procedure Pop();
@@ -1314,7 +1320,7 @@ var
 
   procedure ParseJSON;
   var
-    i, ii, oi, bs: fun.int;
+    i, ii, oi, bs, p: fun.int;
     c: fun.char;
     kv, k, kk: fun.str;
     vv: CData;
@@ -1329,14 +1335,43 @@ var
       c  := s[i];
       oi := i;
       curPos := i;
-      // A separator directly after ':' means the key never got a value.
-      if expectVal and (c in [',', ';', ']', '}']) then
-        StrictFail('missing value for key ''' + k + '''', oi);
-      // expectVal survives only across whitespace; every other char clears it
-      // (':' re-arms it below), so it is assigned once here instead of in
-      // every branch below.
-      if not (c in [' ', #9, #10, #13]) then
-        expectVal := false;
+      // ---- strict pre-checks: RFC-only char set + separator grammar -------
+      // st is the separator state, shared by every nesting level because a
+      // container can only be opened from a value slot: when it closes the
+      // enclosing state is always recomputed as 1 (value just completed), so
+      // no per-level save is needed.
+      //   0 expect a value/key (root start, container just opened)
+      //   1 a value just completed
+      //   2 just after ','
+      //   3 just after an object key
+      //   4 just after ':' (expect the value)
+      // Whitespace never changes st and passes every check.
+      if strict then
+      begin
+        if c in [';', '='] then
+          StrictFail('unexpected char ''' + c + '''', oi);
+        if c in ['''', '`'] then
+          StrictFail('string quotes must be double quotes', oi);
+        if c = '@' then
+          StrictFail('unexpected char ''@''', oi);
+        // A value already completed at the top level: nothing but whitespace
+        // may follow (rejects ',', a second ']'/'}', and a trailing scalar).
+        if (st = 1) and (PopCnt = PushCnt) and not (c in [' ', #9, #10, #13]) then
+          StrictFail('unexpected trailing value', oi);
+        if not (c in [' ', #9, #10, #13]) then
+          case st of
+            1: if not (c in [',', ']', '}']) then
+                 StrictFail('missing separator', oi);
+            2: if c in [']', '}', ',', ':'] then
+                 StrictFail('unexpected separator', oi);
+            0: if (c = ',') or (c = ':') then
+                 StrictFail('unexpected separator', oi);
+            3: if c <> ':' then
+                 StrictFail('expected '':'' after key', oi);
+            4: if c in [',', ']', '}', ':'] then
+                 StrictFail('missing value for key ''' + k + '''', oi);
+          end;
+      end;
       case c of
         '"', '''', '`':
   _STR: begin
@@ -1352,6 +1387,39 @@ var
             kv := Copy(s, oi + 1, i - oi - 1)
           else
             kv := Copy(s, oi + 1, i - oi)
+          ;
+          // strict strings: RFC escapes only, and no raw control characters.
+          if strict then
+          begin
+            bs := oi + 1;
+            while bs < i do
+            begin
+              if s[bs] < #32 then
+                StrictFail('raw control char in string', bs);
+              if s[bs] = '\' then
+              begin
+                Inc(bs);
+                if bs >= i then
+                  StrictFail('unterminated escape', bs);
+                if not (s[bs] in ['"', '\', '/', 'b', 'f', 'n', 'r', 't', 'u']) then
+                  StrictFail('invalid escape ''\' + s[bs] + '''', bs);
+                if s[bs] = 'u' then
+                begin
+                  if bs + 4 >= i then
+                    StrictFail('invalid \u escape', bs);
+                  for p := 1 to 4 do
+                    if not (s[bs + p] in ['0'..'9', 'A'..'F', 'a'..'f']) then
+                      StrictFail('invalid \u escape', bs);
+                  Inc(bs, 4);
+                end;
+              end;
+              Inc(bs);
+            end;
+          end;
+          if (Level > 0) and StackObj[Level -1] and (st in [0, 2]) then
+            st := 3                          // this string is an object key
+          else
+            st := 1                          // otherwise it is a value
           ;
           if s[oi-1] = '@' then
             CValue(vv) := StrToDateTime(kv)
@@ -1370,6 +1438,8 @@ var
         begin
           if s[i+1] in ['x', 'X'] then
           begin
+            if strict then
+              StrictFail('hex number not allowed', oi);
             Inc(i, 2);
             repeat
               Inc(i);
@@ -1378,6 +1448,7 @@ var
             if s[i] in ['$', '_', 'A'..'Z', 'a'..'z'] then
               StrictFail('invalid number ''' + kv + '''', oi);
             CValue(vv) := CParser.StrToNum(kv);
+            st := 1;
             Continue;
           end
           else goto _NUM;
@@ -1385,6 +1456,8 @@ var
 
         '1'..'9', '-', '.':
   _NUM: begin
+          if strict and (Level > 0) and StackObj[Level -1] and (st in [0, 2]) then
+            StrictFail('object key must be a string', oi);
           repeat
             Inc(i);
           until not (s[i] in ['0'..'9', '.', 'e', 'E', '-', '+']) or (i > ii);
@@ -1392,6 +1465,7 @@ var
           if s[i] in ['$', '_', 'A'..'Z', 'a'..'z'] then
             StrictFail('invalid number ''' + kv + '''', oi);
           CValue(vv) := CParser.StrToNum(kv);
+          st := 1;
           Continue;
         end;
 
@@ -1407,12 +1481,18 @@ var
 
         '$', '_', 'A'..'Z', 'a'..'z':
   _KEY: begin
+          if strict and (Level > 0) and StackObj[Level -1] and (st in [0, 2]) then
+            StrictFail('object key must be a string', oi);
           repeat
             Inc(i);
           until not (s[i] in ['$', '_', '@'..'Z', 'a'..'z', '0'..'9']) or (i > ii);
           kv := Copy(s, oi, i - oi);
           if (kv = 'null') or (kv = 'nil') then
-            CValue(vv) := NullValue
+          begin
+            if strict and (kv = 'nil') then
+              StrictFail('bareword ''nil'' not allowed', oi);
+            CValue(vv) := NullValue;
+          end
           else if kv = 'true' then
             CValue(vv) := true
           else if kv = 'false' then
@@ -1422,13 +1502,14 @@ var
             StrictFail('bareword ''' + kv + ''' not allowed', oi);
             CValue(vv) := kv;
           end;
+          st := 1;
           Continue;
         end;
 
         ':', '=':
         begin
           k  := kv;
-          expectVal := true;
+          st := 4;
         end;
 
         ',', ';':
@@ -1437,24 +1518,31 @@ var
           k  := '';
           kv := '';
           kk := '';
+          st := 2;
         end;
 
         '[', '{':
         begin
+          if strict and (Level > 0) and StackObj[Level -1] and (st in [0, 2]) then
+            StrictFail('object key must be a string', oi);
           Push(k, c = '{');
           Inc(PushCnt);
           k  := '';
           kv := '';
           kk := '';
+          st := 0;
         end;
 
         ']', '}':
         begin
+          if strict and (Level >= 1) and (StackObj[Level -1] <> (c = '}')) then
+            StrictFail('mismatched close', oi);
           if k + kv + kk <> '' then GetVal(k, @vv);
           k  := '';
           kv := '';
           kk := '';
           Pop();
+          st := 1;
         end;
         else
           if not (c in [' ', #9, #10, #13]) then
@@ -1468,12 +1556,12 @@ var
       StrictFail('unclosed bracket', i);
     // End of input terminates a pending entry just like a trailing separator,
     // so the last key/value (or set element) is kept instead of dropped.
+    // A bare scalar is a legal root (RFC 8259), so commit unconditionally.
     if k + kv + kk <> '' then
-    begin
-      if (k = '') and (kk = '') then
-        StrictFail('unexpected trailing value', i);
       GetVal(k, @vv);
-    end;
+    // strict: an empty or whitespace-only document has no JSON value.
+    if Root = nil then
+      StrictFail('no JSON value', i);
   end;
 
   {$I 'libfd.inc'}
@@ -1484,7 +1572,8 @@ begin
   PushCnt := 0;
   PopCnt := 0;
   curPos := 0;
-  expectVal := false;
+  st := 0;
+  SetLength(StackObj, 0);
 
   if fd then
   begin

@@ -14,6 +14,7 @@
 #    join (concat) if format = -1
 # 2. json param of @toJson()
 #    default false, name quoted as "name"
+#    json: 2 -> strict mode
 # 3. fd param of @toJson()/getJson()
 #    format 0 - indent 2 white-space
 #           1 - >
