@@ -1458,8 +1458,7 @@ var
         begin
           if s[i+1] in ['x', 'X'] then
           begin
-            if strict then
-              StrictFail('hex number not allowed', oi);
+            StrictFail('hex number not allowed', oi);
             Inc(i, 2);
             repeat
               Inc(i);
@@ -1514,7 +1513,7 @@ var
           kv := Copy(s, oi, i - oi);
           if (kv = 'null') or (kv = 'nil') then
           begin
-            if strict and (kv = 'nil') then
+            if kv = 'nil' then
               StrictFail('bareword ''nil'' not allowed', oi);
             CValue(vv) := NullValue;
           end
@@ -1558,7 +1557,7 @@ var
 
         ']', '}':
         begin
-          if strict and (Level >= 1) and (StackObj[Level -1] <> (c = '}')) then
+          if (Level >= 1) and (StackObj[Level -1] <> (c = '}')) then
             StrictFail('mismatched close', oi);
           if k + kv + kk <> '' then GetVal(k, @vv);
           k  := '';
