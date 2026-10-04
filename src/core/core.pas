@@ -105,6 +105,9 @@ type
     destructor Destroy; override;
     function parse(aexp: CExp): CNode;
     procedure run(env: CEnv); override;
+    {$IfDef IDE}
+    property Expr: CExp read exp;
+    {$EndIf}
   end;
   
   CEcho = class(CCall)

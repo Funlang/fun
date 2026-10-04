@@ -77,6 +77,16 @@ type
   public
     class function ParseOrLoad(const fn: fun.str; prev: fun.ptr = nil; CCParser: CParserClass = nil): fun.ptr;
     class function Parse(const s: fun.str; CCParser: CParserClass; const fn: fun.str = ''; prev: fun.ptr = nil): CRun;
+    {$IfDef IDE}
+    // Parse a single expression against an existing scope. `s` is the raw
+    // expression text (no leading '?'); it is wrapped as the echo command
+    // `?'+s` so the normal grammar accepts it, then the expression node is
+    // returned with its scope parent set to `scope` so identifiers resolve
+    // against it (e.g. the debugger's current frame). `root` receives the
+    // throwaway parse tree the caller must free; on a parse error it stays nil
+    // and the exception propagates.
+    class function ParseExp(const s: fun.str; scope: CNode; out root: CRun): CExp;
+    {$EndIf}
     function DoParse(const s: fun.str; prev: fun.ptr = nil): CNode;
     procedure DoError(const s: fun.str); overload; virtual;
     procedure BuildError(const a1: YYSType);
@@ -946,6 +956,35 @@ begin
     del(p);
   end;
 end;
+
+{$IfDef IDE}
+type
+  // Parse errors must reach the caller of ParseExp; the base CParser.DoError
+  // is a no-op (drivers report errors through their own override).
+  CExpParser = class(CParser)
+  public
+    procedure DoError(const s: fun.str); override;
+  end;
+
+procedure CExpParser.DoError(const s: fun.str);
+begin
+  raise EBase.Create(s);
+end;
+
+class function CParser.ParseExp(const s: fun.str; scope: CNode; out root: CRun): CExp;
+var
+  n: CRun;
+begin
+  result := nil;
+  root   := nil;
+  n      := Parse('?' + s, CExpParser);
+  root   := n;
+  if n = nil then exit;
+  n.parent := scope;
+  if CRuns(n)[0] is CCall then
+    result := CCall(CRuns(n)[0]).Expr;
+end;
+{$EndIf}
 
 class function CParser.ParseFileName(const fn: fun.str; prev: CNode): fun.str;
 var
