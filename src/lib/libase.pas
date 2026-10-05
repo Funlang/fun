@@ -131,7 +131,7 @@ begin
   {$IfDef CPUAMD64}
   result := 'x86_64';
   {$Else}
-  {$IfDef CPUARCH64}
+  {$IfDef CPUAARCH64}
   result := 'arch64';
   {$Else}
   {$IfDef CPUARM}
