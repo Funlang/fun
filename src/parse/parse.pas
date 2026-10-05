@@ -751,6 +751,9 @@ end;
 function CParser.CreateRegex(const a1: YYSType): YYSType;
 begin
   DoLog(a1, result);
+  // Without -dRegex no CRegex is built; return an explicit nil node rather than
+  // an uninitialized pointer (aarch64 otherwise dereferences the garbage).
+  result.node := nil;
   {$IfDef Regex}
   result.node := CRegex.new(Curr).parse(a1.text);
   {$EndIf}
