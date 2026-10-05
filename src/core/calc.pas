@@ -70,7 +70,7 @@ function _Match(env: CEnv; e1, e2: PValue): CValue;
 
 implementation
 
-uses Math;
+uses Math, SysUtils, SysConst;
 
 {$I 'calc.inc'}
 

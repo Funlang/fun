@@ -376,6 +376,29 @@ begin
 {$EndIf}
 end;
 
+{$IfDef FPC}
+// Fun raises EZeroDivide for floating '/ 0' (as Delphi and the x86/ARM32
+// builds do through the hardware FP trap). AArch64 leaves the FP exceptions
+// masked, so the same expression yields +Inf there. Check the divisor
+// explicitly so every target raises the same way; non-numeric operands are
+// left to the Variant division, which reports its own coercion error.
+procedure _CheckDivZero(const v: CValue);
+var
+  d: Double;
+begin
+  if PData(@v)^.VType <= varNull then
+    raise EZeroDivide.Create(SZeroDivide)
+  ;
+  try
+    d := v;
+    if d = 0 then raise EZeroDivide.Create(SZeroDivide);
+  except
+    on E: EZeroDivide do raise;
+    on E: Exception do ; // let the division report the coercion error
+  end;
+end;
+{$EndIf}
+
 procedure C04(env: CEnv; e1, e2: PValue);
 {$IfDef CalcOpt}
   procedure _C04;
@@ -450,10 +473,14 @@ begin
   begin
     _NullNumE1(e1);
     t := _Num2(e2);
+    _CheckDivZero(t);
     e1^ := e1^ / t; // /
   end
   else
+  begin
+    _CheckDivZero(e2^);
     e1^ := e1^ / e2^; // /
+  end;
 {$Else}
 begin
   e1^ := e1^ / e2^; // /
