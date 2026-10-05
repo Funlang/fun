@@ -758,12 +758,19 @@ begin
     if has then val^ := s;
   end;
 {$Else}
-  // Windows/WinCE: read one line through the RTL, so the text comes back in
+{$IfDef WinCE}
+  // WinCE has no console: the RTL's ReadLn(Input, ...) does not even compile
+  // there once the Windows unit is in scope. 'input' is unsupported on WinCE
+  // and simply yields no value; a CE build is a server/embedding target.
+  has := false;
+{$Else}
+  // Windows: read one line through the RTL, so the text comes back in
   // the build's string encoding and is never split into bytes.
   {$I-}
   ReadLn(Input, s);
   {$I+}
   has := IOResult = 0;
+{$EndIf}
   if has then val^ := s;
 {$EndIf}
 
