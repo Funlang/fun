@@ -118,6 +118,14 @@ b.ne loop
 ret
 `);
 
+show('branch0', `#!asm
+loop:
+add x0, x0, #1
+cmp x0, #3
+b.ne loop
+ret
+`);
+
 show('misc', `#!asm
 nop
 br x9

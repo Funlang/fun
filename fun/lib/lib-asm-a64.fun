@@ -508,7 +508,11 @@ class AssemblyA64 = AssemblyBase()
     if c !~ /^#!asm\b/ then
       return base.Compile(c);
     end if;
-    var body = c.replace(/^#!asm\b(?:[:=]?\s*+(\w*+:\w*+))?/, m->GetArgs(m));
+    // [\x20\t]*+ (space/tab, not \s): possessive \s would eat the newline and
+    // then let the optional type-spec group swallow a label that is the first
+    // body line. (A literal space inside a Fun regex class is a parse error;
+    // \x20 is required.)
+    var body = c.replace(/^#!asm\b(?:[:=]?[\x20\t]*+(\w*+:\w*+))?/, m->GetArgs(m));
     var words = new [];
     var labels = new [];
     var fixups = new [];
