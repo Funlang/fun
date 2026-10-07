@@ -49,7 +49,11 @@
 // Operand shapes: x/w = 64/32-bit register (sp/xzr map to 31), # = immediate,
 // lsl/lsr/asr/ror = shift, c = condition, L = label, [x], [x#], [x#]!, [x+x],
 // [x+xs] = memory forms (post-index is "[x]" followed by a separate # operand).
-// Local labels and B/BL/B.cond fixups are resolved here in two passes.
+// Local labels and B/BL/B.cond fixups are resolved here in two passes. A
+// numeric branch operand (`b #N`, `bl #N`, `b.cond #N`) is a signed BYTE
+// offset from the branch instruction itself (the assembler-target-address
+// reading that gas uses does not apply to this snippet assembler); use labels
+// unless you are hand-computing an offset.
 
 use 'lib-asm.fun';
 use 'lib-zlib.fun';
@@ -280,7 +284,7 @@ fun _a64_slot(w, slot, ops)
     if lf = nil then raise 'not a logical immediate: $slot'.eval(); end if;
     return w bit or ((lf - 1) << 10);
   end if;
-  var m = slot.match(/^([rvobmshk])(\d++)@(\d++)(?::(\d++))?(?::(\d++))?$/);
+  var m = slot.match(/^([rvobmshkYD])(\d++)@(\d++)(?::(\d++))?(?::(\d++))?$/);
   if m.@@() = '' then raise 'bad slot: $slot'.eval(); end if;
   var op = m.@(1);
   var i  = m.@(2).toNum();
@@ -289,21 +293,52 @@ fun _a64_slot(w, slot, ops)
   if m.@(4) <> nil then wid = m.@(4).toNum(); end if;
   var sh = 0;
   if m.@(5) <> nil then sh = m.@(5).toNum(); end if;
+  // Y/D = signed field (pre/post index imm9, stp/ldp imm7). Distinct letters,
+  // not O/V: Fun's `=` on strings is case-insensitive, so 'o' = 'O'.
+  var signed = false;
+  if op = 'Y' then op = 'o'; signed = true; end if;
+  if op = 'D' then op = 'v'; signed = true; end if;
   var o = ops[i];
   var val = 0;
-  if op = 'r' or op = 'v' or op = 's' or op = 'k' then
+  var mask = (1 << wid) - 1;
+  if op = 'r' then
     val = o.num;
-  elsif op = 'h' then
-    val = o.num >> 4;
   elsif op = 'b' then
     val = o.mem.base;
   elsif op = 'm' then
     val = o.mem.idx;
   elsif op = 'o' then
     val = o.mem.off;
+  elsif op = 'k' then
+    val = o.num;
+  elsif op = 's' then
+    val = o.num;
+    if val < 0 or val > mask then raise 'shift amount out of range: $slot'.eval(); end if;
+  elsif op = 'h' then
+    if o.num <> 0 and o.num <> 16 and o.num <> 32 and o.num <> 48 then
+      raise 'shift must be 0/16/32/48: $slot'.eval();
+    end if;
+    val = o.num >> 4;
+  elsif op = 'v' then
+    val = o.num;
   end if;
-  if sh > 0 then val = (val bit and 0xFFFFFFFF) >> sh; end if;
-  val = val bit and ((1 << wid) - 1);
+  if op = 'o' or op = 'v' then
+    // memory offset / immediate: scale to the field unit, then range-check
+    var scaled = val;
+    if sh > 0 then
+      if val mod (1 << sh) <> 0 then raise 'offset not a multiple of the element size: $slot'.eval(); end if;
+      scaled = val div (1 << sh);
+    end if;
+    if signed then
+      if scaled < (0 - (1 << (wid-1))) or scaled > ((1 << (wid-1)) - 1) then
+        raise 'signed immediate out of range: $slot'.eval();
+      end if;
+    else
+      if scaled < 0 or scaled > mask then raise 'immediate out of range: $slot'.eval(); end if;
+    end if;
+    val = scaled;
+  end if;
+  val = val bit and mask;
   result = w bit or (val << bpos);
 end fun;
 

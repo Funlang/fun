@@ -126,6 +126,12 @@ b.ne loop
 ret
 `);
 
+show('branch_num', `#!asm
+b #8
+bl #-4
+b.ne #-8
+`);
+
 show('misc', `#!asm
 nop
 br x9
@@ -148,6 +154,19 @@ blr x9
 ret
 `);
 ?. 'callback: ' & ((ch.length() > 0) and 'encoded' or 'EMPTY');
+
+// Out-of-range / misaligned operands must raise (gas rejects these too; the
+// keystone oracle is lenient here, so this is asserted directly).
+var rejected = 0;
+for bad in ['ldr x0, [x1, #0x8000]', 'movz x0, #0x10000', 'stp x0, x1, [sp, #520]',
+            'ldrb w0, [x1, #4096]', 'ldr x0, [x1, #7]', 'add x0, x1, #12345'] do
+  try
+    enc.Compile('#!asm' & 10.toChar() & bad);
+  except
+    rejected += 1;
+  end try;
+end do;
+?. 'range checks rejected: ' & rejected & '/6';
 
 // Live execution only where the backend can run.
 if cpu = 'arch64' then

@@ -99,10 +99,8 @@ ret
 nop
 br x9
 blr x9
-b #8
 bl #8
 b.eq #4
-b.ne #-8
 b.lt #16
 mov x0, #0
 mov x0, #0xffff
