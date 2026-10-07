@@ -260,7 +260,9 @@ fun _a64_slot(w, slot, ops)
     var v = ops[slot.substr(1).toNum()].num;
     if v < 0 then raise 'add/sub immediate must be non-negative: $v'.eval(); end if;
     if v > 0xFFF then
-      if (v bit and 0xFFF) <> 0 then raise 'add/sub immediate too large: $v'.eval(); end if;
+      if (v bit and 0xFFF) <> 0 or ((v >> 12) > 0xFFF) then
+        raise 'add/sub immediate out of range: $v'.eval();
+      end if;
       w = w bit or (1 << 22);
       v = v >> 12;
     end if;

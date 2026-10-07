@@ -14,6 +14,6 @@ branch_num: 02000014FFFFFF97C1FFFF54
 misc: 1F2003D520011FD620013FD6C0035FD6
 sum1ton: E10300AA000080D20000018B210400F1C1FFFF54C0035FD6
 callback: encoded
-range checks rejected: 6/6
+range checks rejected: 7/7
 exec: skip (cpu=x86_64)
 ok

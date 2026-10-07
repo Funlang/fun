@@ -159,14 +159,15 @@ ret
 // keystone oracle is lenient here, so this is asserted directly).
 var rejected = 0;
 for bad in ['ldr x0, [x1, #0x8000]', 'movz x0, #0x10000', 'stp x0, x1, [sp, #520]',
-            'ldrb w0, [x1, #4096]', 'ldr x0, [x1, #7]', 'add x0, x1, #12345'] do
+            'ldrb w0, [x1, #4096]', 'ldr x0, [x1, #7]', 'add x0, x1, #12345',
+            'add x0, x1, #0x1000000'] do
   try
     enc.Compile('#!asm' & 10.toChar() & bad);
   except
     rejected += 1;
   end try;
 end do;
-?. 'range checks rejected: ' & rejected & '/6';
+?. 'range checks rejected: ' & rejected & '/7';
 
 // Live execution only where the backend can run.
 if cpu = 'arch64' then
