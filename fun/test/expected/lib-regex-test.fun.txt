@@ -1,0 +1,11 @@
+True True True True
+True True True True
+[1][2][3]
+123
+[1][2][3]
+[1]
+abcd[123]efg
+abcd[1][2][3]efg
+abcd[3][6][9]efg
+left: [a], right: [b]
+[a] [b] [c] [d] 

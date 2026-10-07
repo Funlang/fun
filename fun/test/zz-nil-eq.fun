@@ -1,0 +1,16 @@
+'defaultCodePage'.set(65001);
+var ok;
+var a = 'line'.input(ok: ok);
+?. 'first ok';
+?. ok;
+?. 'first val';
+?. a;
+?. 'first eqEmpty';
+?. (a = '');
+var b = 'line'.input(ok: ok);
+?. 'second ok';
+?. ok;
+?. 'second val';
+?. b;
+?. 'second eqEmpty';
+?. (b = '');

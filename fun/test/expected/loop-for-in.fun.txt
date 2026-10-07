@@ -1,0 +1,4 @@
+12345..DONE
+54321..DONE
+a 1 b 2 c 3 DONE
+a 1 0 b 2 1 c 3 2 DONE

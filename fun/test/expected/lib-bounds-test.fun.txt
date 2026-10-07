@@ -1,0 +1,23 @@
+read neg wraps: True
+read far is nil: True
+read far neg is nil: True
+float idx in range: True
+float idx oob is nil: True
+write oob raises: True
+write far neg raises: True
+write in range: True
+toByte oob is 0: True
+toByte neg is 0: True
+toByte in range: True
+fromByte oob raises: True
+count negative raises: True
+count grows safely: True
+huge index raises: True
+far neg index raises: True
+sparse map works: True
+movs oob raises: True
+movs in range: True
+x(-1) reverse: True
+x(-2) sort: True
+x(2) replicate: True
+done

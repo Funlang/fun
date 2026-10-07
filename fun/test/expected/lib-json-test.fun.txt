@@ -1,0 +1,22 @@
+1 2 3 
+[1,2,3]
+key: str val: this is a string. 
+key: num val: 123456789 
+format: 0
+[{key:"str",val:"this is a string."},{key:"num",val:123456789}]
+format: 1 level
+[
+ {key:"str",val:"this is a string."},
+ {key:"num",val:123456789}
+]
+format: 2 levels
+[
+ {
+  key: "str",
+  val: "this is a string."
+ },
+ {
+  key: "num",
+  val: 123456789
+ }
+]

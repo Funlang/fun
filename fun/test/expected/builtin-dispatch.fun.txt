@@ -1,0 +1,61 @@
+ a b 
+hello
+HELLO
+bcd
+2
+3
+ababab
+A
+65
+1.5
+13
+0
+3
+5
+8
+11
+7
+False
+False
+False
+False
+False
+False
+True
+True
+True
+True
+True
+True
+True
+0
+1
+True
+True
+True
+True
+abXYef
+a#b2
+probe
+5
+probe
+3
+[10,20,30]
+3
+4
+True
+True
+False
+True
+True
+True
+False
+True
+False
+fun "9.0"
+os linux
+cpu x86_64
+compiler fpc 3.2.2
+bits 64
+chars 1
+version 20260926

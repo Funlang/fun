@@ -1,0 +1,47 @@
+start: True
+bound to a port: True
+sendto 9 bytes: True
+runonce rc: 9
+server got data: True
+server got ip: True
+server got client port: True
+client got echo: True
+echo source: True
+timeout returns nil: True
+run handled 3: True
+acks in order: True
+bind failure raised: True
+dns localhost: True
+dns numeric: True
+tcp listen port: True
+tcp connect: True
+tcp accept: True
+tcp sendall: True
+tcp recvsome: True
+tcp peeraddr: True
+tcp recv eof: True
+http port: True
+http 200: True
+http body: True
+http req seen: True
+http post body: True
+http post seen: True
+http 404: True
+WebSocket handshake response.
+ws 101: True
+ws accept: True
+ws frame sent: True
+ws onGet: True
+ws reply: True
+http client connect: True
+GET /x HTTP/1.1
+Host: y
+
+
+http client status: True
+http run handled 3: True
+async post fired: True
+async after fired: True
+async every not early: True
+udp async timer: True
+done

@@ -1,0 +1,5 @@
+try..DONE
+try..finally..DONE
+try..finally..DONE
+try..except..Floating point division by zero..finally..DONE
+try..except..Stop!..finally..DONE

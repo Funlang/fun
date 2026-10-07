@@ -1,0 +1,18 @@
+15
+www.funlang.org
+WWW.FUNLANG.ORG
+4
+www.funlang.org
+funlang.org
+funlang
+www
+funlang
+org
+FunLangFunLangFunLang
+[Hello\t\\\r\n\?\x40]
+[Hello	\
+\?@]
+Error: %s at %s/%s.
+Error: "a" not found at 10/3.
+Hello, $name.
+Hello, David.

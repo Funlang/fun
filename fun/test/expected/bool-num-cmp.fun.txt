@@ -1,0 +1,25 @@
+PASS true = -1
+PASS -1 = true
+PASS false = 0
+PASS 0 = false
+PASS true=1 and 1=true symmetric
+PASS true = 1 is false
+PASS true=0 and 0=true symmetric
+PASS true = 0 is false
+PASS false=1 and 1=false symmetric
+PASS true>0 and 0<true symmetric
+PASS true > 0 is false (true is -1)
+PASS true<2 and 2>true symmetric
+PASS true < 2 is true
+PASS true<0 and 0>true symmetric
+PASS true<>1 and 1<>true symmetric
+PASS true <> 1 is true
+PASS true<=0 and 0>=true symmetric
+PASS true>=1 and 1<=true symmetric
+PASS true=1.0 and 1.0=true symmetric
+PASS true=2.5 and 2.5=true symmetric
+PASS true<2.5 and 2.5>true symmetric
+PASS true = true
+PASS true <> false
+PASS true = x is false
+PASS x = true is false

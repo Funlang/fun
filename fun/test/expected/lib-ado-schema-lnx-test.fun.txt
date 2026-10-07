@@ -1,0 +1,9 @@
+tables=2 fields=6
+user fields=3 autokey=id
+order parent=user_id
+user children=id
+get=1 age=30
+insert rows=1 autoId=2
+update rows=1
+delete rows=1
+done

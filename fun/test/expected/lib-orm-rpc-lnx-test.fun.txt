@@ -1,0 +1,8 @@
+orm init: True
+orm get name: True
+orm get age: True
+orm save rows: True
+orm get all rows: True/True
+orm delete rows: True
+orm unknown method: True
+done

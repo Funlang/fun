@@ -1,0 +1,20 @@
+select count=2
+  1:alice:42
+  2:bob:7
+param=1:alice
+autoId=3
+updated=3
+rollback=3
+commit=4
+blob=000102ff
+null=True
+tables=2:b
+columns=4:v:204
+pkeys=1:id
+orm insert rows=2 autoId=2
+orm get=1 age=30
+orm update rows=1
+orm age now=31
+orm delete rows=1
+orm remaining=1
+eac=42 closed=True

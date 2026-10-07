@@ -1,0 +1,12 @@
+4294967301
+ <- big64 expect 4294967301
+4294967301
+ <- passll(b) roundtrip expect 4294967301
+4294967302
+ <- addll(b,1) expect 4294967302
+3000000000
+ <- addll(1e9,2e9) expect 3000000000
+-1000000000
+ <- addll(1e9,-2e9) expect -1000000000
+4294967301
+ <- applyll(big64, pass) roundtrip expect 4294967301

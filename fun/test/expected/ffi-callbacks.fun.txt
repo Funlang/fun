@@ -1,0 +1,27 @@
+10
+ <- apply1(5,dbl) expect 10
+9
+ <- dapply(3,sq) expect 9
+5
+ <- cb2(2,3,add) expect 5
+1
+ <- sumvia(1,add) expect 1
+25
+ <- sumvia(5,add) expect 25
+1
+ <- cb2(0,1) expect 1
+11
+ <- cb2(5,6) expect 11
+0
+ <- cb2(0,0) expect 0
+123
+ <- applyStr(hello) expect 123
+-1
+ <- applyStr(world) expect -1
+made-string
+ <- make(9, greet) string return expect made-string
+7
+ <- fire0i(seven) expect 7 (zero-arg cb, int ret)
+
+1
+ <- zcnt after fire0(tick) expect 1 (void cb)

@@ -1,0 +1,6 @@
+GET=200 OK hello world ct=text/plain xt=yes
+404=404 Not Found nope
+redir=200 hello world
+POST=200 echo:payload|ua:fun-client
+HDR=200 xc=abc
+BIN=000102ff ct=application/octet-stream

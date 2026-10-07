@@ -1,0 +1,10 @@
+True
+True
+True
+True
+0 1 2 3 4 5 DONE
+0
+1
+5
+4
+0 1 2 -3 4 -5 DONE

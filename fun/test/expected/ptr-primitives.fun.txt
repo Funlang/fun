@@ -1,0 +1,14 @@
+4142
+48656c6c6f
+ABC
+2
+BCxxx
+3
+hello XYZld
+10
+5
+9
+40
+0
+True
+abcdefgh

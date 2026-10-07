@@ -1,0 +1,12 @@
+3.75
+ <- fsum(1.5,2.25) expect 3.75
+5
+ <- fdbl(2.5) expect 5
+6
+ <- dfromf(3) double-from-float expect 6
+6.5
+ <- mixsum(2,1.5,3) expect 6.5
+5
+ <- five() expect 5
+7.5
+ <- ident(7.5) expect 7.5

@@ -1,0 +1,16 @@
+True
+False
+/
+True
+True
+True
+True
+/x/z
+/
+/a/b/c
+True
+True
+True
+True
+True
+True

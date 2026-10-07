@@ -1,0 +1,21 @@
+== demo: Chinese Q&A (structural A不A/A没A, arrow-lambda swap) ==
+Ask me anything.  End with a blank line (or Ctrl-D).
+Q: A: 我会聊天!
+Q: A: 我会唱歌!
+Q: A: 我能帮你!
+Q: A: 可以加我微信!
+Q: A: 我有钱!
+Q: A: 我去过北京!
+Q: A: 我会唱歌!
+Q: A: 今天天气好!
+Q: A: 普通一句
+Q: Bye.
+== char: one key at a time ==
+[a]
+[b]
+[
+]
+char-eof
+== all: remainder of the stream ==
+all=[x
+y]

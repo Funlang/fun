@@ -1,0 +1,10 @@
+True
+True
+True
+True
+9
+copied-ok
+0
+True
+9
+env-value

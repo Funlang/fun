@@ -1,0 +1,11 @@
+123456789
+1.23456789
+4294967295
+This is a string.
+Hello, string.
+it's me
+9-4-10 15:35:15
+9-4-10 15:35:15
+True
+False
+[]

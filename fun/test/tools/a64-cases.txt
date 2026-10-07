@@ -1,0 +1,117 @@
+add x0, x1, #1
+sub x0, x1, #1
+adds x0, x1, #1
+subs x0, x1, #1
+add x0, x1, #4095
+sub x0, x1, #4095
+adds x0, x1, #4095
+subs x0, x1, #4095
+add x0, x1, #4096
+sub x0, x1, #4096
+adds x0, x1, #4096
+subs x0, x1, #4096
+add x0, x1, #0x123
+sub x0, x1, #0x123
+adds x0, x1, #0x123
+subs x0, x1, #0x123
+add sp, sp, #16
+sub sp, sp, #16
+add x29, x30, #8
+sub x29, x30, #8
+adds x29, x30, #8
+subs x29, x30, #8
+cmp x0, #5
+cmp x9, #0
+cmn x0, #1
+add w0, w1, #7
+sub w2, w3, #9
+cmp w4, #10
+add x0, x1, x2
+add x0, x1, x2, lsl #3
+sub x9, x10, x11
+adds x0, x1, x2, lsl #5
+subs w0, w1, w2
+cmp x0, x1
+cmp x0, x1, lsl #2
+neg x0, x1
+neg w2, w3
+and x0, x1, x2
+orr x0, x1, x2
+eor x0, x1, x2
+ands x0, x1, x2
+tst x0, x1
+mvn x0, x1
+mvn w2, w3
+and x0, x0, #0xff
+orr x1, x1, #0xf
+eor x2, x2, #0xff00
+ands x3, x3, #0xffff
+and w0, w0, #0xff
+and x0, x0, #0xffff0000
+orr x0, xzr, #0xffffffff
+and x0, x0, #0x5555555555555555
+mov x0, x1
+mov w0, w1
+movz x0, #0x1234
+movz x0, #0x1234, lsl #16
+movz x0, #0x1234, lsl #32
+movk x5, #0xabcd, lsl #48
+movn x0, #0xff
+movn w0, #0xff
+movk w0, #0x1234, lsl #16
+csel x0, x1, x2, eq
+csel x0, x1, x2, ne
+csel w3, w4, w5, lt
+csel x9, x10, x11, gt
+csel x0, x1, x2, hi
+ldr x0, [x1]
+str x0, [x1]
+ldr x0, [x1, #8]
+str x0, [x1, #8]
+ldr w0, [x1, #4]
+str w2, [sp, #12]
+ldrb w0, [x1, #3]
+strb w2, [x1, #5]
+ldrh w0, [x1, #2]
+strh w2, [x1, #6]
+ldr x0, [sp, #16]
+ldr x0, [x1, #8]!
+str x0, [x1, #8]!
+ldr x0, [x1], #8
+str x0, [x1], #8
+ldrb w0, [x1], #1
+strb w0, [x1, #2]!
+ldr x0, [x1, x2]
+str x0, [x1, x2]
+ldr x0, [x1, x2, lsl #3]
+str x0, [x1, x2, lsl #3]
+ldrb w0, [x1, x2]
+strb w0, [x1, x2]
+stp x29, x30, [sp, #-16]!
+ldp x29, x30, [sp], #16
+stp x0, x1, [sp, #16]
+ldp x0, x1, [sp, #16]
+stp w0, w1, [sp, #-8]!
+ldp w0, w1, [sp], #8
+stp x0, x1, [x2]
+ldp x0, x1, [x2]
+ret
+nop
+br x9
+blr x9
+b #8
+bl #8
+b.eq #4
+b.ne #-8
+b.lt #16
+mov x0, #0
+mov x0, #0xffff
+mov x0, #0x10000
+mov x0, #0xff00ff00
+mov x0, #0x12345678
+mov x0, #0xffffffff
+mov w0, #0xff00ff00
+mov x0, sp
+mov sp, x0
+mov w0, wsp
+mov wsp, w0

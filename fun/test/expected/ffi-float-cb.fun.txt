@@ -1,0 +1,13 @@
+8
+ <- fc(4.0,x2f) float cb expect 8
+6.5
+ <- mixsum(2,1.5,3) expect 6.5
+16
+ <- acc(0.5,4,+2)=2.5+3.5+4.5+5.5 expect 16
+
+5
+ <- cnt after walk(5) expect 5
+42
+ <- twice_cb(10,*3,+2) expect 32
+106
+ <- apply1(100, nn-> x+6) expect 106

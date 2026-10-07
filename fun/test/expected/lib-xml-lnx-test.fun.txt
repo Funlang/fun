@@ -1,0 +1,15 @@
+load=True
+root=root a=1 b=two
+children=3
+ child=child x=10 kids=1
+ child=child x=20 kids=0
+ child=empty x=nil kids=0
+text node=#text text=hello
+load2=True
+nested=b.c=deep
+cdata=<raw & stuff>
+entity=a&b<c
+file load=True
+file root=cfg mode=fast
+walk=r,p,q,s,
+malformed raised=True

@@ -91,5 +91,6 @@ desktop.ini
 # ---- Local article drafts (own git repo, backed up to /data/git/funlang/fun-art) ----
 art/
 
-# Local scratch tests (not tracked)
-fun/test/
+# fun/test/ is tracked: the Linux/Windows regression runner, its expected
+# snapshots and the FFI/tool helpers live there. Build outputs (*.so, *.o, ...)
+# are still ignored by the rules above.

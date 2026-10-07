@@ -1,0 +1,6 @@
+7
+6765
+2.25
+30
+<string>:1: error: identifier expected
+True

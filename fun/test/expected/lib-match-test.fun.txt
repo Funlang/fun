@@ -1,0 +1,6 @@
+missed: [a] value: [.] @@: [.] rest: [b.c.d] 
+missed: [b] value: [.] @@: [.] rest: [c.d] 
+missed: [c] value: [.] @@: [.] rest: [d] 
+missed: [d] 
+Count: [4] first: [a] 
+0: [a.b.c] 1: [a] 2: [b] 3: [c] 
