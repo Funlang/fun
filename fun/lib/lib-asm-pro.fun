@@ -5,18 +5,10 @@ use 'lib-asm.fun';
 use 'lib-zlib.fun';
 //use 'lib-sse-compress.fun';
 
-// Pointer width decides how `<name>` placeholders (callback addresses) are
-// encoded. On a 64-bit host an address needs 8 bytes; see _ptr2hex and the
-// `mov r64, imm64` entries injected in AsmsInit below.
-var _asm_bits = 'host'.arg().getJson(fd: true).bits;
-fun _ptr2hex(p)
-  if _asm_bits = 64 then
-    result = int2hex64(p);
-  else
-    result = int2hex(p);
-  end if;
-end fun;
-
+// _ptr2hex / int2hex64 / the `<name>` callback resolver (_nameAddr) live in
+// lib-asm.fun now (shared with lib-asm-a64). The `mov r64, imm64` entries
+// injected in AsmsInit below consume the 8-byte form _ptr2hex produces on a
+// 64-bit host.
 var asms = AsmsInit();
 fun AsmsInit()
   var all;
@@ -59,6 +51,8 @@ end fun;
 
 Assembly = AssemblyPro;
 class AssemblyPro = AssemblyBase()
+  var arch = 'x86';
+
   fun Compile(c)
     if c =~ /^#!asm\b/ then
       c = c.replace(/^#!asm\b(?:[:=]?\s*+(\w*+:\w*+))?/, m->GetArgs(m))
@@ -71,16 +65,7 @@ class AssemblyPro = AssemblyBase()
         if asms[a] = nil then
           // function names in fun
           asm = asm.replace(/<(\w++)>/g, (n){
-            var fn = names[n.@(1)];
-            if fn <> nil then
-              try      //[fun1: [fn: fn1, type: 'i:i', object: this], ...]
-                result = _ptr2hex(fn.fn.@toCallback(fn.object, fn.type, true));
-              except   //[fun1:  fn1.@toCallback(this, 'i:i', true) , ...]
-                result = _ptr2hex(fn);
-              end try;
-            else
-              raise '%s not found.'.format(n.@(1));
-            end if;
+            result = _nameAddr(n.@(1), names);
           });
           // numbers
           a = asm.replace(/[-+]?(?<!\*)\$?\b([\dA-F]++\b)/g, (n){

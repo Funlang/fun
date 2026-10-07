@@ -7,8 +7,11 @@ use 'lib-utils.fun';
 // VirtualAlloc / VirtualFree. Linux uses libc mmap / munmap, and because the
 // host ABI there is System V AMD64, any hand-written `#!asm` body for Linux
 // must use the register-argument convention (rdi, rsi, ...), not the Win32
-// stack form. See art/notes/library-port-plan.md.
+// stack form. See art/notes/library-port-plan.md and
+// art/notes/arch-machine-code-plan.md.
 var _asm_linux = 'host'.arg().getJson(fd: true).os = 'linux';
+var _asm_cpu   = 'host'.arg().getJson(fd: true).cpu;
+var _asm_bits  = 'host'.arg().getJson(fd: true).bits;
 var _asm_alloc = nil;
 var _asm_free  = nil;
 if _asm_linux then
@@ -18,6 +21,12 @@ else
   _asm_alloc = 'kernel32'.getapi('VirtualAlloc', 'iiii:i');
   _asm_free  = 'kernel32'.getapi('VirtualFree',  'iii:i');
 end if;
+
+// Instruction-cache flush hook, nil by default. x86 has coherent I/D caches so
+// no flush is needed; aarch64 does NOT, and the aarch64 backend binds libc
+// __clear_cache here (see lib-asm-a64.fun). Load() calls it with the real code
+// length after the bytes are copied and before the callable pointer is built.
+var _asm_flush = nil;
 
 // 64-bit little-endian byte dump. lib-utils' int2hex is fixed at 4 bytes
 // because Fun's `>>` is 32-bit; a 64-bit host address (a @toCallback libffi
@@ -32,6 +41,32 @@ fun int2hex64(int)
     v = v div 256;
   end do;
   result = result.upper();
+end fun;
+
+// Pointer width decides how `<name>` placeholders (callback addresses) are
+// encoded. On a 64-bit host an address needs 8 bytes; on 32-bit, 4.
+fun _ptr2hex(p)
+  if _asm_bits = 64 then
+    result = int2hex64(p);
+  else
+    result = int2hex(p);
+  end if;
+end fun;
+
+// Resolve a `<name>` placeholder to the hex address of its callback. `names`
+// maps the name to either a raw address or the [fn/type/object] record the
+// `@toCallback` plumbing stores. Shared by lib-asm-pro (x86: `mov r64, imm64`
+// via the injected %16 forms) and lib-asm-a64 (aarch64: a movz/movk pair).
+fun _nameAddr(n, names)
+  var fn = names[n];
+  if fn = nil then
+    raise '%s not found.'.format(n);
+  end if;
+  try      //[fun1: [fn: fn1, type: 'i:i', object: this], ...]
+    result = _ptr2hex(fn.fn.@toCallback(fn.object, fn.type, true));
+  except   //[fun1:  fn1.@toCallback(this, 'i:i', true) , ...]
+    result = _ptr2hex(fn);
+  end try;
 end fun;
 
 #*
@@ -49,6 +84,15 @@ class AssemblyBase(args, code, names)
   var Run   = nil;
   var call  = -> Run();
   var del   = -> Delete();
+
+  // Instruction set this backend emits: 'x86' (lib-asm-pro) or 'arch64'
+  // (lib-asm-a64). '' means arch-neutral. Load() refuses to run a backend on a
+  // cpu it does not target, so a mis-selected Assembly cannot silently execute
+  // foreign machine code (the pre-aarch64 failure mode was SIGILL).
+  var arch    = '';
+  // Plain-return tail appended by Load when the body does not end in one. x86
+  // Linux: C3 (ret). aarch64: C0035FD6 (ret, a full 4-byte instruction).
+  var ret_hex = 'C3';
 
   fun New(n)
     msize = n;
@@ -85,7 +129,21 @@ class AssemblyBase(args, code, names)
               .replace(/\W++/g, '');
   end fun;
 
+  // Does this backend match the host cpu?
+  fun ArchOk()
+    if arch = '' then
+      result = true;
+    elsif arch = 'x86' then
+      result = (_asm_cpu = 'x86_64') or (_asm_cpu = 'i386');
+    else
+      result = _asm_cpu = arch;
+    end if;
+  end fun;
+
   fun Load(c)
+    if not ArchOk() then
+      raise 'lib-asm: %s backend cannot run on cpu %s'.format(arch, _asm_cpu);
+    end if;
     if c = nil then
       c = code;
     end if;
@@ -93,9 +151,13 @@ class AssemblyBase(args, code, names)
     if _asm_linux then
       // System V AMD64 passes arguments in registers and the caller cleans up,
       // so Win32's `ret n` tail is wrong here (it would corrupt rsp). Only make
-      // sure the code ends in a plain return.
-      if c !~ /C3$/i then
-        c &= 'C3';
+      // sure the code ends in this backend's plain return.
+      var tail = '';
+      if c.length() >= ret_hex.length() then
+        tail = c.substr(0 - ret_hex.length());
+      end if;
+      if tail.upper() <> ret_hex.upper() then
+        c &= ret_hex;
       end if;
     else
       if c !~ /C2....$/i then
@@ -107,6 +169,11 @@ class AssemblyBase(args, code, names)
     Delete();
     ptr   = New(s.length()*charSize());
     s.move(ptr); // ansi only ! -> now unicode ok !
+
+    // Instruction-cache coherency: no-op on x86, required on aarch64.
+    if _asm_flush <> nil then
+      _asm_flush(ptr, s.length());
+    end if;
 
     Run   = nil.getapi(ptr, args);
     return this;
