@@ -30,6 +30,8 @@
 #   raw-address-getapi (needs the Linux .so helper), lib-tcc-test / lib-jit-test
 #   (need libtcc.so next to funcmd, built by make-linux-x86_64.sh from src/3rd/tcc),
 #   lib-asm-lnx (mmap'd executable memory + 64-bit callback addresses),
+#   lib-asm-a64 (encoder snapshot is portable, but its final "exec" line names
+#                the host cpu),
 #   lib-hash-test (str.md5/sha1 need the -dMD5 define)
 # run-benchmarks is host-dependent for a different reason: it needs a POSIX shell
 # and a symlinked lib/ layout.
