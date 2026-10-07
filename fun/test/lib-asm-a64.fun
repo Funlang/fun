@@ -53,6 +53,7 @@ orr x1, x1, #0xf
 eor x2, x2, #0xff00
 ands x3, x3, #0xffff
 orr w4, w4, #0xf0
+and w7, w7, #1
 and x5, x5, #0xffff0000
 orr x6, xzr, #0xffffffff
 `);

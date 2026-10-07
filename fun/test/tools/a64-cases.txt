@@ -115,3 +115,4 @@ mov x0, sp
 mov sp, x0
 mov w0, wsp
 mov wsp, w0
+and w0, w0, #1

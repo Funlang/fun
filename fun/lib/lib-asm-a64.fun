@@ -236,7 +236,9 @@ fun _a64_logical(lo, hi, w)
           var n = 0;
           if len = 6 then n = 1; end if;
           var imms = (k - 1) bit or (0x3F bit and bit not ((1 << (len+1)) - 1));
-          return (n << 12) bit or (r << 6) bit or imms;
+          // +1: Fun has 0 = nil, and N:immr:imms = 0 is a valid field
+          // (32-bit immediate #1); a bare 0 would compare equal to nil.
+          return ((n << 12) bit or (r << 6) bit or imms) + 1;
         end if;
         r += 1;
       end do;
@@ -276,7 +278,7 @@ fun _a64_slot(w, slot, ops)
     end if;
     var lf = _a64_logical(lo, hi, iw);
     if lf = nil then raise 'not a logical immediate: $slot'.eval(); end if;
-    return w bit or (lf << 10);
+    return w bit or ((lf - 1) << 10);
   end if;
   var m = slot.match(/^([rvobmshk])(\d++)@(\d++)(?::(\d++))?(?::(\d++))?$/);
   if m.@@() = '' then raise 'bad slot: $slot'.eval(); end if;
@@ -417,7 +419,7 @@ fun _a64_mov(words, rd, im, names)
   end if;
   var lf = _a64_logical(v, 0, iw);
   if lf <> nil then
-    words.@add(orr bit or (lf << 10) bit or 0x3E0 bit or rd.num);
+    words.@add(orr bit or ((lf - 1) << 10) bit or 0x3E0 bit or rd.num);
     return;
   end if;
   var ch = new [];
