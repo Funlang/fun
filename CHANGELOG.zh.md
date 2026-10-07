@@ -6,6 +6,28 @@
 
 ## [未发布]
 
+- 手写汇编新增 AArch64 (ARM64) 后端。新增 `lib-asm-a64.fun` 及其指令表
+  `asm-list-a64.fd`（仍走 `fun/lib/tools/make-asm-list.fun` 同一条构建链），
+  输出定长、位域编码的 aarch64 指令：add/sub（立即数与移位寄存器）、逻辑
+  （寄存器与立即数，含位掩码立即数编码器）、move wide、`mov` 别名、`csel`、
+  装载/存储（无偏移、前后变址、寄存器偏移，以及 `stp`/`ldp` 成对）、分支与
+  `ret`。本地标签与 `B`/`BL`/`B.cond` 偏移两遍解析；`mov` 立即数按汇编器
+  的习惯选 movz/movn/orr/movk。该后端为显式启用（`Assembly = AssemblyA64();`），
+  在非 aarch64 上拒绝运行。
+- aarch64 指令缓存一致性：`lib-asm.fun` 在把代码拷入可执行内存后调用可选的
+  `_asm_flush(ptr, len)` 钩子，`lib-asm-a64.fun` 把 libc 的 `__clear_cache`
+  （回退 `cacheflush`、再回退 libgcc）绑到该钩子——不做刷新时 cpu 可能执行旧
+  字节，且只在 aarch64 上发作。
+- `lib-asm.fun` 增加两个后端共用的钩子：可覆写的 `ret_hex` 收尾（x86 `C3`、
+  aarch64 `C0035FD6`）、下沉到基类的 `_ptr2hex`/`int2hex64`/`<name>` 回调地址
+  解析，以及由 `Load()` 校验的每后端 `arch`。后端不会再静默执行异构机器码
+  （此前 aarch64 会跑进 x86 字节导致 SIGILL）。
+- `'host'.arg()` 在 AArch64 上正确上报 `cpu arch64`（`CPUARCH64` 分支此前拼错，
+  落到了 `cpu64`）；aarch64 汇编器的 cpu 门禁即以该值为准。
+- 测试：`fun/test/lib-asm-a64.fun` 对编码器做快照（其编码已与 keystone/gas
+  汇编器逐字节比对），`fun/test/tools/asm-a64-diff.sh` 在装有
+  `gcc-aarch64-linux-gnu` 时重跑该逐字节对拍。Linux 回归清单已加入该用例。
+
 - 运行版本探测：版本号改到生成式 include `src/core/version.inc`（`funVersion`，数值
   YYYYMMDD；`funRelease`，人工维护的语言版本串），由 `fun.pas` 用 `{$I}` 引入。
   用纯 Fun 脚本重新生成：`fun src/prj/fun/gen-version.fun [YYYYMMDD] ["release"]`，

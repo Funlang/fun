@@ -6,6 +6,35 @@ This project records notable changes in the style of [Keep a Changelog](https://
 
 ## [Unreleased]
 
+- Hand-written assembly gains an AArch64 (ARM64) backend. `lib-asm-a64.fun`,
+  with its own table `asm-list-a64.fd` built by the same
+  `fun/lib/tools/make-asm-list.fun` chain, emits the fixed-width,
+  bit-field-encoded aarch64 instruction set: add/sub (immediate and shifted
+  register), logical (register and immediate, with a bitmask-immediate
+  encoder), move wide, `mov` aliases, `csel`, loads/stores (unsigned offset,
+  pre/post index, register offset, and `stp`/`ldp` pairs), branches and `ret`.
+  Local labels and `B`/`BL`/`B.cond` offsets are resolved in two passes; `mov`
+  immediates pick movz/movn/orr/movk like the assembler. The backend is
+  opt-in (`Assembly = AssemblyA64();`) and refuses to run on a non-aarch64
+  cpu.
+- Instruction-cache coherency on aarch64: `lib-asm.fun` calls an optional
+  `_asm_flush(ptr, len)` hook after copying code into executable memory, and
+  `lib-asm-a64.fun` binds libc's `__clear_cache` (falling back to
+  `cacheflush`, then libgcc) to it - without it the cpu may execute stale
+  bytes, a fault that only shows up on aarch64.
+- `lib-asm.fun` grew the hooks both backends share: an overridable `ret_hex`
+  return tail (x86 `C3`, aarch64 `C0035FD6`), the moved-down
+  `_ptr2hex`/`int2hex64`/`<name>` callback resolver, and a per-backend `arch`
+  checked by `Load()`. A backend can no longer silently execute foreign
+  machine code (previously aarch64 ran x86 bytes into SIGILL).
+- `'host'.arg()` now reports `cpu arch64` on AArch64 (the `CPUARCH64` branch
+  was misspelt, so it fell through to `cpu64`); the assembler cpu gate keys on
+  this value.
+- Tests: `fun/test/lib-asm-a64.fun` snapshots the encoder (its encodings were
+  cross-checked byte-for-byte against the keystone/gas assembler), and
+  `fun/test/tools/asm-a64-diff.sh` re-runs that differential against a
+  `gcc-aarch64-linux-gnu` toolchain when one is installed. The Linux
+  regression list includes the a64 case.
 - Version probing: the runtime version now lives in a generated include,
   `src/core/version.inc` (`funVersion`, numeric YYYYMMDD; `funRelease`, the
   curated language version string), pulled into `fun.pas` with `{$I}`. It is
