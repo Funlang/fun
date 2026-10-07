@@ -115,3 +115,6 @@ mov w0, wsp
 mov wsp, w0
 and w0, w0, #1
 mov x8, #0xdeadbeefcafeba
+ldr x5, [x1, x2]
+ldr w6, [x1, x2, lsl #2]
+ldrb w7, [x1, x2, lsl #0]

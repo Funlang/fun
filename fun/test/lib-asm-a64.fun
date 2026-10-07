@@ -99,6 +99,9 @@ ldrb w0, [x1, #3]
 strb w0, [x1, #2]!
 ldr x1, [x1], #8
 ldr x2, [x3, x4, lsl #3]
+ldr x5, [x1, x2]
+ldr w6, [x1, x2, lsl #2]
+ldrb w7, [x1, x2, lsl #0]
 `);
 
 show('pair', `#!asm
@@ -160,14 +163,15 @@ ret
 var rejected = 0;
 for bad in ['ldr x0, [x1, #0x8000]', 'movz x0, #0x10000', 'stp x0, x1, [sp, #520]',
             'ldrb w0, [x1, #4096]', 'ldr x0, [x1, #7]', 'add x0, x1, #12345',
-            'add x0, x1, #0x1000000'] do
+            'add x0, x1, #0x1000000', 'ldr x0, [x1, x2, lsl #2]',
+            'ldr x0, [x1, w2]', 'ldr x0, [x1, x2, sxtw]'] do
   try
     enc.Compile('#!asm' & 10.toChar() & bad);
   except
     rejected += 1;
   end try;
 end do;
-?. 'range checks rejected: ' & rejected & '/7';
+?. 'range checks rejected: ' & rejected & '/10';
 
 // Live execution only where the backend can run.
 if cpu = 'arch64' then

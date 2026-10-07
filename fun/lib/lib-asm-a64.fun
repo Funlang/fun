@@ -139,15 +139,23 @@ fun _a64_mem(t)
   o.pre = pre; o.base = nil; o.off = nil; o.idx = nil; o.sh = nil;
   o.hasOff = false; o.hasIdx = false; o.hasSh = false;
   o.base = _a64_regnum(parts[0]);
+  if o.base < 0 then raise 'bad memory base register: ' & t; end if;
   if parts.@count() > 1 then
     if parts[1].substr(0, 1) = '#' then
       o.off = _a64_num(parts[1]);
       o.hasOff = true;
     else
+      // register offset: only the x-register LSL form is supported (no
+      // w/uxtw/sxtw options), otherwise the encoding would be wrong
+      if parts[1].match(/^x\d++$/i).@@() = '' then
+        raise 'register offset index must be an x register: ' & t;
+      end if;
       o.idx = _a64_regnum(parts[1]);
       o.hasIdx = true;
       if parts.@count() > 2 then
-        o.sh = _a64_class(parts[2]).num;
+        var sc = _a64_class(parts[2]);
+        if sc.typ <> 'lsl' then raise 'register offset supports only lsl #n: ' & t; end if;
+        o.sh = sc.num;
         o.hasSh = true;
       end if;
     end if;
@@ -285,6 +293,28 @@ fun _a64_slot(w, slot, ops)
     var lf = _a64_logical(lo, hi, iw);
     if lf = nil then raise 'not a logical immediate: $slot'.eval(); end if;
     return w bit or ((lf - 1) << 10);
+  end if;
+  // Z<i>@<bpos>:<size>: the register-offset S bit. Set for `lsl #size` (size =
+  // log2 element size) and for an explicit lsl#0 on a byte access; clear for
+  // lsl#0 on larger accesses; anything else is a mismatch gas rejects.
+  if typ = 'Z' then
+    var zm = slot.match(/^Z(\d++)@(\d++):(\d++)$/);
+    if zm.@@() = '' then raise 'bad Z slot: $slot'.eval(); end if;
+    var mm = ops[zm.@(1).toNum()].mem;
+    var zb = zm.@(2).toNum();
+    var zs = zm.@(3).toNum();
+    var set = false;
+    if mm.hasSh then
+      if mm.sh = 0 then
+        if zs = 0 then set = true; end if;
+      elsif mm.sh = zs then
+        set = true;
+      else
+        raise 'register-offset shift does not match element size: $slot'.eval();
+      end if;
+    end if;
+    if set then return w bit or (1 << zb); end if;
+    return w;
   end if;
   var m = slot.match(/^([rvobmshkYD])(\d++)@(\d++)(?::(\d++))?(?::(\d++))?$/);
   if m.@@() = '' then raise 'bad slot: $slot'.eval(); end if;
