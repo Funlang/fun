@@ -135,6 +135,22 @@ bl #-4
 b.ne #-8
 `);
 
+show('shift_ext', `#!asm
+add w13, w14, w15, lsl #2
+and x16, x17, x18, lsl #4
+orr w19, w20, w21, lsl #3
+eor x22, x23, x24, lsl #40
+ands w25, w26, w27, lsl #5
+tst x28, x29, lsl #1
+mvn x30, x0, lsl #2
+neg w1, w2, lsl #1
+cmp w3, w4, lsl #6
+ldrh w8, [x1]
+strh w9, [sp], #4
+ldrh w11, [x1, x2, lsl #1]
+strb w12, [x1]
+`);
+
 show('misc', `#!asm
 nop
 br x9
@@ -164,14 +180,15 @@ var rejected = 0;
 for bad in ['ldr x0, [x1, #0x8000]', 'movz x0, #0x10000', 'stp x0, x1, [sp, #520]',
             'ldrb w0, [x1, #4096]', 'ldr x0, [x1, #7]', 'add x0, x1, #12345',
             'add x0, x1, #0x1000000', 'ldr x0, [x1, x2, lsl #2]',
-            'ldr x0, [x1, w2]', 'ldr x0, [x1, x2, sxtw]'] do
+            'ldr x0, [x1, w2]', 'ldr x0, [x1, x2, sxtw]',
+            'orr w0, w1, w2, lsl #40', 'add w0, w1, w2, lsl #32'] do
   try
     enc.Compile('#!asm' & 10.toChar() & bad);
   except
     rejected += 1;
   end try;
 end do;
-?. 'range checks rejected: ' & rejected & '/10';
+?. 'range checks rejected: ' & rejected & '/12';
 
 // Live execution only where the backend can run.
 if cpu = 'arch64' then

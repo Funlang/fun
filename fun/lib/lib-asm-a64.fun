@@ -345,7 +345,10 @@ fun _a64_slot(w, slot, ops)
     val = o.num;
   elsif op = 's' then
     val = o.num;
-    if val < 0 or val > mask then raise 'shift amount out of range: $slot'.eval(); end if;
+    // a 32-bit shifted-register instruction only has 5 usable shift bits
+    var smax = 63;
+    if ops[0].typ = 'w' then smax = 31; end if;
+    if val < 0 or val > smax then raise 'shift amount out of range for this register size: $slot'.eval(); end if;
   elsif op = 'h' then
     if o.num <> 0 and o.num <> 16 and o.num <> 32 and o.num <> 48 then
       raise 'shift must be 0/16/32/48: $slot'.eval();
