@@ -81,6 +81,7 @@ mov x2, #0x10000
 mov x3, #0xff00ff00
 mov x4, #0x12345678
 mov x5, #0xffffffff
+mov x8, #0xdeadbeefcafeba
 mov w6, #0xffffff00
 `);
 

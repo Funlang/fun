@@ -332,15 +332,14 @@ end fun;
 fun _a64_hexchunks(hex)
   var h = hex.upper();
   if h.substr(0, 2) = '0X' then h = h.substr(2); end if;
+  // left-pad to a whole number of 4-digit groups, else the top partial group
+  // (e.g. 15 hex digits) is dropped
+  while h.length() mod 4 <> 0 do h = '0' & h; end do;
+  if h.length() > 16 then raise 'immediate wider than 64 bits: $hex'.eval(); end if;
   var chunks = new [];
   var n = h.length();
-  for i = 0 to 4 do
-    var p = n - (i+1)*4;
-    if p >= 0 then
-      chunks.@add(('0x' & h.substr(p, 4)).toNum());
-    else
-      chunks.@add(0);
-    end if;
+  for i = 0 to (n div 4) - 1 do
+    chunks.@add(('0x' & h.substr(n - (i+1)*4, 4)).toNum());
   end do;
   result = chunks;
 end fun;

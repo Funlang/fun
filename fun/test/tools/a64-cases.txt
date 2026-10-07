@@ -116,3 +116,4 @@ mov sp, x0
 mov w0, wsp
 mov wsp, w0
 and w0, w0, #1
+mov x8, #0xdeadbeefcafeba
